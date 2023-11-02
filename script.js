@@ -183,8 +183,8 @@ function pongPhysics() {
 		if (tgpong.motionless) return null;
 
 		// move pong
-		tgpong.x += Math.cos(tgpong.a) * tgpong.v;
-		tgpong.y += Math.sin(tgpong.a) * tgpong.v;
+		tgpong.x = Math.min(Math.max(tgpong.x + Math.cos(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.width / 64) * 65);
+		tgpong.y = Math.min(Math.max(tgpong.y + Math.sin(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.height / 64) * 65);
 		tgpong.v = Math.min(Math.max((tgpong.v - MIN_PONG_SPEED) / 1.025 + MIN_PONG_SPEED, MIN_PONG_SPEED), 40);
 
 		// bounce off wall if applies
@@ -241,10 +241,6 @@ function pongPhysics() {
 									const SIDE_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s));
 									const LEVEL_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s));
 
-									// console.log(LEVEL_COLLISION_DEEPNESS)
-
-									// trigger warning this collision code is done poorly
-
 									if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
 										const a1 = ((MY_OLD_A % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
 										const a2 = ((otherPong.a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
@@ -253,28 +249,27 @@ function pongPhysics() {
 
 										if (otherPong.y < tgpong.y) {
 											//otherPong.y = tgpong.y - otherPong.s;
-											otherPong.y -= LEVEL_COLLISION_DEEPNESS / 2;
-											tgpong.y += LEVEL_COLLISION_DEEPNESS / 2;
+											otherPong.y -= LEVEL_COLLISION_DEEPNESS / 2 + 1;
+											tgpong.y += LEVEL_COLLISION_DEEPNESS / 2 + 1;
 										} else {
 											//otherPong.y = tgpong.y + tgpong.s;
-											otherPong.y += LEVEL_COLLISION_DEEPNESS / 2;
-											tgpong.y -= LEVEL_COLLISION_DEEPNESS / 2;
+											otherPong.y += LEVEL_COLLISION_DEEPNESS / 2 + 1;
+											tgpong.y -= LEVEL_COLLISION_DEEPNESS / 2 + 1;
 										}
 									} else {
-										tgpong.a = Math.atan(Math.sin(otherPong.a + Math.PI) / Math.cos(MY_OLD_A)) + (tgpong.x < otherPong.x) * Math.PI;
-										otherPong.a = Math.atan(Math.sin(MY_OLD_A) / Math.cos(otherPong.a + Math.PI)) + (tgpong.x > otherPong.x) * Math.PI;
+										tgpong.a = Math.atan(Math.sin(MY_OLD_A) / Math.cos(otherPong.a)) + (tgpong.x < otherPong.x) * Math.PI;
+										otherPong.a = Math.atan(Math.sin(otherPong.a) / Math.cos(MY_OLD_A)) + (tgpong.x > otherPong.x) * Math.PI;
 
 										if (otherPong.x + otherPong.s / 2 < tgpong.x + tgpong.s / 2) {
 											//otherPong.x = tgpong.x - otherPong.s;
-											otherPong.x -= SIDE_COLLISION_DEEPNESS / 2;
-											tgpong.x += SIDE_COLLISION_DEEPNESS / 2;
+											otherPong.x -= SIDE_COLLISION_DEEPNESS / 2 + 1;
+											tgpong.x += SIDE_COLLISION_DEEPNESS / 2 + 1;
 										} else {
 											//otherPong.x = tgpong.x + tgpong.s;
-											otherPong.x += SIDE_COLLISION_DEEPNESS / 2;
-											tgpong.x -= SIDE_COLLISION_DEEPNESS / 2;
+											otherPong.x += SIDE_COLLISION_DEEPNESS / 2 + 1;
+											tgpong.x -= SIDE_COLLISION_DEEPNESS / 2 + 1;
 										}
 									}
-
 									//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
 
 									cannotCollideWith.push(otherPong.pongID);
@@ -314,7 +309,6 @@ function drawUserInterface() {
 function addPong(times = 1) {
 	for (let i = 0; i < times; i++) {
 		const randomAngle = 2 * Math.PI * Math.random();
-		//const randomAngle = (i + 0.5) * Math.PI + Math.random() * 1 - 0.5;
 		let idx = pong.push({
 			x: canvas.width / 2 + Math.cos(randomAngle) * 100,
 			y: canvas.height / 2 + Math.sin(randomAngle) * 100,
