@@ -8,7 +8,7 @@ const UIS = 48;
 
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
-canvas.width = innerWidth - UIS / 4;
+canvas.width = innerWidth;
 canvas.height = innerHeight - UIS / 4;
 
 /* --- VARIABLES --- */
@@ -182,12 +182,20 @@ function game() {
 function drawBoard() {
 	ctxS.fillText('text', '#FFF', 36, 0, 0);
 
+	// middle lines
 	for (let i = 0; i < Math.ceil(canvas.height / UIS); i++) {
 		ctxS.fillRect((canvas.width - UIS / 5) / 2, (i - 0.25) * UIS + (canvas.height % UIS) / 2, UIS / 5, UIS / 2);
 	}
 
-	ctxS.fillCirc(canvas.width / 2, 0, UIS / 1.5, '#FFD');
-	ctxS.fillCirc(canvas.width / 2, canvas.height, UIS / 1.5, '#FFD');
+	// top and bottom bumpers
+	ctxS.fillCirc(canvas.width / 2, 0, UIS, '#FFD');
+	ctxS.fillCirc(canvas.width / 2, canvas.height, UIS, '#FFD');
+
+	// corner redirectors
+	ctxS.fillRect(-UIS, -UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
+	ctxS.fillRect(canvas.width - UIS, -UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
+	ctxS.fillRect(-UIS, canvas.height - UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
+	ctxS.fillRect(canvas.width - UIS, canvas.height - UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
 }
 
 function drawPlayerPad() {
