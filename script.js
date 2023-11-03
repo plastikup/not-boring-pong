@@ -4,10 +4,12 @@ console.clear();
 
 /* --- canvas initialisation --- */
 
+const UIS = 48;
+
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
-canvas.width = innerWidth;
-canvas.height = innerHeight;
+canvas.width = innerWidth - UIS / 4;
+canvas.height = innerHeight - UIS / 4;
 
 /* --- VARIABLES --- */
 
@@ -16,9 +18,9 @@ const MIN_PONG_SPEED = 3;
 let gameScore = 0;
 
 let playerPad = {
-	x: canvas.width - 24,
+	x: canvas.width - UIS / 2,
 	y: canvas.height - 280,
-	w: 8,
+	w: UIS / 4,
 	h: canvas.height / 8,
 	velocityRotation: 0,
 	velocityY: 0,
@@ -58,6 +60,12 @@ let ctxS = {
 		ctx.rotate(rotation);
 		ctx.fillRect(-w / 2, -h / 2, w, h);
 		ctx.setTransform(1, 0, 0, 1, 0, 0);
+	},
+	fillCirc: function (x, y, r, fillStyle) {
+		ctx.fillStyle = fillStyle;
+		ctx.beginPath();
+		ctx.arc(x, y, r, 0, Math.PI * 2, false);
+		ctx.fill();
 	},
 };
 
@@ -165,10 +173,27 @@ document.addEventListener('mousemove', function (e) {
 
 function game() {
 	ctxS.fillRect(0, 0, canvas.width, canvas.height, '#0008');
+	drawBoard();
 	drawPlayerPad();
 	pongPhysics();
-	drawUserInterface();
 	requestAnimationFrame(game);
+}
+
+function drawBoard() {
+	ctxS.fillText('text', '#FFF', 36, 0, 0);
+
+	for (let i = 0; i < Math.ceil(canvas.height / UIS); i++) {
+		ctxS.fillRect((canvas.width - UIS / 5) / 2, (i - 0.25) * UIS + (canvas.height % UIS) / 2, UIS / 5, UIS / 2);
+	}
+
+	ctxS.fillCirc(canvas.width / 2, 0, UIS / 1.5, '#FFD');
+	ctxS.fillCirc(canvas.width / 2, canvas.height, UIS / 1.5, '#FFD');
+}
+
+function drawPlayerPad() {
+	playerPad.velocityRotation = Math.min(Math.max(playerPad.velocityRotation / 1.75 + playerPad.velocityY / 100, -Math.PI / 16), Math.PI / 16);
+	playerPad.velocityY = 0;
+	ctxS.fillRect(playerPad.x, playerPad.y, playerPad.w, playerPad.h, 'white', playerPad.velocityRotation);
 }
 
 function pongPhysics() {
@@ -291,21 +316,6 @@ function pongPhysics() {
 	}
 }
 
-// this:  4.612933719065333 other:  8.244088863559394
-// this:  4.612933719065333 other:  4.347341779970587
-
-//console.log(((-3 % 5) + 5) % 5);
-
-function drawPlayerPad() {
-	playerPad.velocityRotation = Math.min(Math.max(playerPad.velocityRotation / 1.75 + playerPad.velocityY / 100, -Math.PI / 16), Math.PI / 16);
-	playerPad.velocityY = 0;
-	ctxS.fillRect(playerPad.x, playerPad.y, playerPad.w, playerPad.h, 'white', playerPad.velocityRotation);
-}
-
-function drawUserInterface() {
-	ctxS.fillText('text', '#FFF', 36, 0, 0);
-}
-
 function addPong(times = 1) {
 	for (let i = 0; i < times; i++) {
 		const randomAngle = 2 * Math.PI * Math.random();
@@ -347,6 +357,6 @@ F.load().then((font) => {
 		}
 	}
 
-	addPong(50);
+	addPong(20);
 	game();
 });
