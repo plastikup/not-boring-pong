@@ -1,10 +1,8 @@
 'use strict';
-
 console.clear();
+const UIS = 48;
 
 /* --- canvas initialisation --- */
-
-const UIS = 48;
 
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
@@ -13,7 +11,7 @@ canvas.height = innerHeight - UIS / 4;
 
 /* --- VARIABLES --- */
 
-let MIN_PONG_SPEED = 3;
+let MIN_PONG_SPEED = 4;
 
 let gameScore = 0;
 
@@ -25,6 +23,11 @@ let playerPad = {
 	velocityRotation: 0,
 	velocityY: 0,
 };
+
+let bouncersExtraRadius = {
+	top: 0,
+	bottom: 0,
+}
 
 let pong = [];
 let collisionMap = [];
@@ -192,9 +195,11 @@ function drawBoard() {
 		ctxS.fillRect((canvas.width - UIS / 5) / 2, (i - 0.25) * UIS + (canvas.height % UIS) / 2, UIS / 5, UIS / 2);
 	}
 
-	// top and bottom bumpers
-	ctxS.fillCirc(canvas.width / 2, 0, UIS, '#FFD');
-	ctxS.fillCirc(canvas.width / 2, canvas.height, UIS, '#FFD');
+	// top and bottom bouncers
+	ctxS.fillCirc(canvas.width / 2, 0, UIS + bouncersExtraRadius.top, '#FFD');
+	ctxS.fillCirc(canvas.width / 2, canvas.height, UIS + bouncersExtraRadius.bottom, '#FFD');
+	bouncersExtraRadius.top *= 0.85;
+	bouncersExtraRadius.bottom *= 0.85
 
 	// corners wedge
 	ctxS.fillRect(-UIS, -UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
@@ -271,12 +276,15 @@ function pongPhysics() {
 				tgpong.a = 2 * (angleToBouncer - Math.PI / 2) - tgpong.a;
 				tgpong.x = Math.cos(angleToBouncer) * (r + 2) + canvas.width / 2 - tgpong.s / 2;
 				tgpong.y = Math.sin(angleToBouncer) * (r + 2) - tgpong.s / 2;
+				bouncersExtraRadius.top += 20;
 			} else {
 				const angleToBouncer = Math.atan2(tgpong.y + tgpong.s / 2 - canvas.height, tgpong.x + tgpong.s / 2 - canvas.width / 2);
 				tgpong.a = 2 * (angleToBouncer - Math.PI / 2) - tgpong.a;
 				tgpong.x = Math.cos(angleToBouncer) * (r + 2) + canvas.width / 2 - tgpong.s / 2;
 				tgpong.y = Math.sin(angleToBouncer) * (r + 2) + canvas.height - tgpong.s / 2;
+				bouncersExtraRadius.bottom += 20;
 			}
+			tgpong.v += 5;
 		}
 
 		// collision with pad
