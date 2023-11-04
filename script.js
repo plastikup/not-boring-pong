@@ -27,7 +27,7 @@ let playerPad = {
 let bouncersExtraRadius = {
 	top: 0,
 	bottom: 0,
-}
+};
 
 let pong = [];
 let collisionMap = [];
@@ -199,7 +199,7 @@ function drawBoard() {
 	ctxS.fillCirc(canvas.width / 2, 0, UIS + bouncersExtraRadius.top, '#FFD');
 	ctxS.fillCirc(canvas.width / 2, canvas.height, UIS + bouncersExtraRadius.bottom, '#FFD');
 	bouncersExtraRadius.top *= 0.85;
-	bouncersExtraRadius.bottom *= 0.85
+	bouncersExtraRadius.bottom *= 0.85;
 
 	// corners wedge
 	ctxS.fillRect(-UIS, -UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
@@ -219,12 +219,22 @@ function pongPhysics() {
 	for (let i = 0; i < pong.length; i++) {
 		let tgpong = pong[i];
 
-		// draw pong
-		ctx.fillStyle = tgpong.fillStyle;
-		ctx.fillRect(tgpong.x, tgpong.y, tgpong.s, tgpong.s);
-
 		// exit if pong does not move
-		if (tgpong.motionless) return null;
+		if (tgpong.motionless._bool) {
+			const exs = tgpong.motionless.extraSize;
+			ctxS.fillRect(tgpong.x - exs / 2, tgpong.y - exs / 2, tgpong.s + exs, tgpong.s + exs, tgpong.fillStyle + Math.floor(tgpong.motionless.opacity * 16).toString(16));
+			tgpong.motionless.extraSize -= 2;
+			tgpong.motionless.opacity += 0.05;
+			if (tgpong.motionless.extraSize <= 0) {
+				tgpong.motionless._bool = false;
+				tgpong.motionless.extraSize = 0;
+				tgpong.motionless.opacity = 1;
+			}
+			continue;
+		}
+
+		// draw pong
+		ctxS.fillRect(tgpong.x, tgpong.y, tgpong.s, tgpong.s, tgpong.fillStyle);
 
 		// move pong
 		tgpong.x = Math.min(Math.max(tgpong.x + Math.cos(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.width / 64) * 65);
@@ -326,7 +336,7 @@ function pongPhysics() {
 					const collisionCell = arrLine[tgpong.gx + j];
 					if (collisionCell != undefined) {
 						collisionCell.forEach((otherPong) => {
-							if (otherPong != tgpong && otherPong.pongID > tgpong.pongID && !tgpong.cannotCollideWith.includes(otherPong.pongID)) {
+							if (otherPong != tgpong && !otherPong.motionless._bool && otherPong.pongID > tgpong.pongID && !tgpong.cannotCollideWith.includes(otherPong.pongID)) {
 								if (Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s)) < (otherPong.s + tgpong.s) / 2 && Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s)) < (otherPong.s + tgpong.s) / 2) {
 									const MY_OLD_A = tgpong.a;
 									const MY_OLD_X = tgpong.x;
@@ -389,8 +399,8 @@ function addPong(times = 1) {
 	for (let i = 0; i < times; i++) {
 		const randomAngle = 2 * Math.PI * Math.random();
 		let idx = pong.push({
-			x: canvas.width / 2 + Math.cos(randomAngle) * 100,
-			y: canvas.height / 2 + Math.sin(randomAngle) * 100,
+			x: canvas.width / 2 - 16, // + Math.cos(randomAngle) * 100,
+			y: canvas.height / 2 - 16, // + Math.sin(randomAngle) * 100,
 			gx: Math.floor(canvas.width / 2 / 64) + 1,
 			gy: Math.floor(canvas.height / 2 / 64) + 1,
 			ogx: Math.floor(canvas.width / 2 / 64) + 1,
@@ -398,7 +408,11 @@ function addPong(times = 1) {
 			s: Math.random() * 20 + 32,
 			a: randomAngle + Math.PI,
 			v: 5,
-			motionless: false,
+			motionless: {
+				_bool: true,
+				extraSize: 40,
+				opacity: 0,
+			},
 			pongID: pong.length,
 			fillStyle: '#FFF',
 			cannotCollideWith: [],
