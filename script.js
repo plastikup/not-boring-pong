@@ -13,7 +13,7 @@ canvas.height = innerHeight - UIS / 4;
 
 /* --- VARIABLES --- */
 
-const MIN_PONG_SPEED = 3;
+let MIN_PONG_SPEED = 3;
 
 let gameScore = 0;
 
@@ -166,9 +166,13 @@ async function intro() {
 }
 
 document.addEventListener('mousemove', function (e) {
-	const NEW_Y = Math.max(Math.min(e.offsetY - playerPad.h / 2, canvas.height - playerPad.h - 8), 8);
+	const NEW_Y = Math.max(Math.min(e.offsetY - playerPad.h / 2, canvas.height - playerPad.h - UIS * 1.414), UIS * 1.414);
 	playerPad.velocityY = playerPad.y - NEW_Y;
 	playerPad.y = NEW_Y;
+
+	if (e.offsetY < e.offsetX - canvas.width + UIS * 1.414) {
+		console.log('yes');
+	}
 });
 
 function game() {
@@ -176,6 +180,7 @@ function game() {
 	drawBoard();
 	drawPlayerPad();
 	pongPhysics();
+
 	requestAnimationFrame(game);
 }
 
@@ -191,7 +196,7 @@ function drawBoard() {
 	ctxS.fillCirc(canvas.width / 2, 0, UIS, '#FFD');
 	ctxS.fillCirc(canvas.width / 2, canvas.height, UIS, '#FFD');
 
-	// corner redirectors
+	// corners wedge
 	ctxS.fillRect(-UIS, -UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
 	ctxS.fillRect(canvas.width - UIS, -UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
 	ctxS.fillRect(-UIS, canvas.height - UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
@@ -220,10 +225,37 @@ function pongPhysics() {
 		tgpong.y = Math.min(Math.max(tgpong.y + Math.sin(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.height / 64) * 65);
 		tgpong.v = Math.min(Math.max((tgpong.v - MIN_PONG_SPEED) / 1.025 + MIN_PONG_SPEED, MIN_PONG_SPEED), 40);
 
-		// bounce off wall if applies
+		// bounce off wall/wedge if applies
 		if (Math.abs(tgpong.y + tgpong.s / 2 - canvas.height / 2) > (canvas.height - tgpong.s) / 2) {
 			tgpong.y = Math.min(Math.max(tgpong.y, 0), canvas.height - tgpong.s);
 			tgpong.a = Math.PI * 2 - tgpong.a;
+		}
+		//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
+		//tgpong.y > -tgpong.x - canvas.width + UIS * 1.414
+		if (tgpong.y < -tgpong.x + UIS * 1.414) { // top left
+			tgpong.a = Math.PI * 1.5 - tgpong.a;
+			const incrX = -tgpong.y + UIS * 1.414;
+			const incrY = -tgpong.x + UIS * 1.414;
+			tgpong.x += incrX - tgpong.x + 1;
+			tgpong.y += incrY - tgpong.y + 1;
+		} else if (tgpong.y < tgpong.x + tgpong.s - canvas.width + UIS * 1.414) { // top right
+			tgpong.a = Math.PI * 0.5 - tgpong.a;
+			const incrX = tgpong.y - tgpong.s + canvas.width - UIS * 1.414;
+			const incrY = tgpong.x + tgpong.s - canvas.width + UIS * 1.414;
+			tgpong.x += incrX - tgpong.x + 1;
+			tgpong.y += incrY - tgpong.y + 1;
+		} else if (tgpong.y + tgpong.s > tgpong.x + canvas.height - UIS * 1.414) { // bottom left
+			tgpong.a = Math.PI * 0.5 - tgpong.a;
+			const incrX = tgpong.y + tgpong.s - canvas.height + UIS * 1.414;
+			const incrY = tgpong.x - tgpong.s + canvas.height - UIS * 1.414;
+			tgpong.x += incrX - tgpong.x + 1;
+			tgpong.y += incrY - tgpong.y + 1;
+		} else if (tgpong.y + tgpong.s > -tgpong.x - tgpong.s + canvas.width + canvas.height - UIS * 1.414) { // bottom right
+			tgpong.a = Math.PI * 1.5 - tgpong.a;
+			const incrX = -tgpong.y - tgpong.s * 2 + canvas.width + canvas.height - UIS * 1.414;
+			const incrY = -tgpong.x - tgpong.s * 2 + canvas.width + canvas.height - UIS * 1.414;
+			tgpong.x += incrX - tgpong.x + 1;
+			tgpong.y += incrY - tgpong.y + 1;
 		}
 
 		// collision with pad
