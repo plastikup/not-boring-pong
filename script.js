@@ -12,8 +12,10 @@ canvas.height = innerHeight - UIS / 4;
 /* --- VARIABLES --- */
 
 let MIN_PONG_SPEED = 4;
+let MAX_PONG_COUNT = 5;
 
 let gameScore = 0;
+let gameStartTS = Date.now();
 
 let playerPad = {
 	x: canvas.width - UIS / 2,
@@ -29,6 +31,7 @@ let botPad = {
 	w: UIS / 4,
 	h: canvas.height / 8,
 	velocityY: 0,
+	tgpong: undefined,
 };
 
 let bouncersExtraRadius = {
@@ -179,16 +182,13 @@ document.addEventListener('mousemove', function (e) {
 	const NEW_Y = Math.max(Math.min(e.offsetY - playerPad.h / 2, canvas.height - playerPad.h - UIS * 1.414), UIS * 1.414);
 	playerPad.velocityY = playerPad.y - NEW_Y;
 	playerPad.y = NEW_Y;
-
-	if (e.offsetY < e.offsetX - canvas.width + UIS * 1.414) {
-		console.log('yes');
-	}
 });
 
 function game() {
 	ctxS.fillRect(0, 0, canvas.width, canvas.height, '#0008');
 
 	if (MIN_PONG_SPEED < 10) MIN_PONG_SPEED += 0.0015;
+	if (Math.floor((Date.now() - gameStartTS) / 10000) - pong.length > 0 && pong.length < MAX_PONG_COUNT) addPong(1);
 
 	drawBoard();
 	drawPads();
@@ -225,9 +225,22 @@ function drawPads() {
 	ctxS.fillRect(playerPad.x, playerPad.y, playerPad.w, playerPad.h, 'white', playerPad.velocityRotation);
 
 	// botPad
-	let tgpong = pong[0];
-	botPad.velocityY = Math.min(Math.max((tgpong.y - botPad.y) / 20 + botPad.velocityY, -5), 5);
-	botPad.y += botPad.velocityY;
+	if (botPad.tgpong == undefined) botPad.tgpong = pong[0];
+	let mostLeft = botPad.tgpong.x;
+	for (let i = 1; i < 5; i++) {
+		for (let j = 0; j < collisionMap.length; j++) {
+			const cell = collisionMap[j][i];
+			if (cell.length == 0) continue;
+			if (cell[0].x < mostLeft) {
+				botPad.tgpong = cell[0];
+				mostLeft = cell[0].x;
+			}
+		}
+		if (mostLeft != Infinity) break;
+	}
+	botPad.velocityY = Math.min(Math.max(((botPad.tgpong.y - botPad.y - botPad.h / 2) / 20 + botPad.velocityY) * 0.8, -200), 200);
+	botPad.y = Math.max(Math.min(botPad.y + botPad.velocityY, canvas.height - playerPad.h - UIS * 1.414), UIS * 1.414);
+	//botPad.y = botPad.tgpong.y;
 	ctxS.fillRect(botPad.x, botPad.y, botPad.w, botPad.h, 'white');
 }
 
@@ -311,7 +324,7 @@ function pongPhysics() {
 				tgpong.y = Math.sin(angleToBouncer) * (r + 2) + canvas.height - tgpong.s / 2;
 				bouncersExtraRadius.bottom += 20;
 			}
-			tgpong.v += 5;
+			tgpong.v += 7;
 		}
 
 		// collision with pad
