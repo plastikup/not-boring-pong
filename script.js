@@ -460,11 +460,15 @@ function pongPhysics() {
 
 		// if outsite reset pong
 		if (tools.isOutOfBound(tgpong.x, tgpong.y, tgpong.s, tgpong.s, true)) {
-			if (tgpong.x > canvas.width / 2) goals.bot.count++;
-			else goals.player.count++;
-
-			goals.bot.newGoal._bool = true;
-			goals.bot.newGoal.i = 0;
+			if (tgpong.x > canvas.width / 2) {
+				goals.bot.count++;
+				goals.bot.newGoal._bool = true;
+				goals.bot.newGoal.i = 0;
+			} else {
+				goals.player.count++;
+				goals.player.newGoal._bool = true;
+				goals.player.newGoal.i = 0;
+			}
 
 			tgpong.s = Math.random() * 20 + 32;
 			tgpong.x = canvas.width / 2 - tgpong.s / 2;
