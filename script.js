@@ -23,6 +23,13 @@ let playerPad = {
 	velocityRotation: 0,
 	velocityY: 0,
 };
+let botPad = {
+	x: UIS / 2,
+	y: canvas.height - 280,
+	w: UIS / 4,
+	h: canvas.height / 8,
+	velocityY: 0,
+};
 
 let bouncersExtraRadius = {
 	top: 0,
@@ -180,8 +187,11 @@ document.addEventListener('mousemove', function (e) {
 
 function game() {
 	ctxS.fillRect(0, 0, canvas.width, canvas.height, '#0008');
+
+	if (MIN_PONG_SPEED < 10) MIN_PONG_SPEED += 0.0015;
+
 	drawBoard();
-	drawPlayerPad();
+	drawPads();
 	pongPhysics();
 
 	requestAnimationFrame(game);
@@ -208,10 +218,17 @@ function drawBoard() {
 	ctxS.fillRect(canvas.width - UIS, canvas.height - UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
 }
 
-function drawPlayerPad() {
+function drawPads() {
+	// playerPad
 	playerPad.velocityRotation = Math.min(Math.max(playerPad.velocityRotation / 1.75 + playerPad.velocityY / 100, -Math.PI / 16), Math.PI / 16);
 	playerPad.velocityY = 0;
 	ctxS.fillRect(playerPad.x, playerPad.y, playerPad.w, playerPad.h, 'white', playerPad.velocityRotation);
+
+	// botPad
+	let tgpong = pong[0];
+	botPad.velocityY = Math.min(Math.max((tgpong.y - botPad.y) / 20 + botPad.velocityY, -5), 5);
+	botPad.y += botPad.velocityY;
+	ctxS.fillRect(botPad.x, botPad.y, botPad.w, botPad.h, 'white');
 }
 
 //tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
@@ -302,7 +319,6 @@ function pongPhysics() {
 		let realPongY = tgpong.y + tgpong.s / 2;
 		let realPlatfX = playerPad.x + playerPad.w / 2;
 		let realPlatfY = playerPad.y + playerPad.h / 2;
-
 		if (Math.abs(realPongY - realPlatfY) < (tgpong.s + playerPad.h) / 2 && Math.abs(realPongX - realPlatfX) < (tgpong.s + playerPad.w) / 2) {
 			const SIDE_COLLISION_DEEPNESS = playerPad.w / 2 - Math.abs(tgpong.x + tgpong.s / 2 - (playerPad.x + playerPad.w / 2));
 			const LEVEL_COLLISION_DEEPNESS = playerPad.h / 2 - Math.abs(tgpong.y + tgpong.s / 2 - (playerPad.y + playerPad.h / 2));
@@ -315,6 +331,22 @@ function pongPhysics() {
 				tgpong.v += 1 + Math.abs(playerPad.velocityRotation) * 5;
 				if (tgpong.x + tgpong.s / 2 < playerPad.x + playerPad.w / 2) tgpong.x = playerPad.x - tgpong.s;
 				else tgpong.x = playerPad.x + playerPad.w;
+			}
+		}
+		realPlatfX = botPad.x + botPad.w / 2;
+		realPlatfY = botPad.y + botPad.h / 2;
+		if (Math.abs(realPongY - realPlatfY) < (tgpong.s + botPad.h) / 2 && Math.abs(realPongX - realPlatfX) < (tgpong.s + botPad.w) / 2) {
+			const SIDE_COLLISION_DEEPNESS = botPad.w / 2 - Math.abs(tgpong.x + tgpong.s / 2 - (botPad.x + botPad.w / 2));
+			const LEVEL_COLLISION_DEEPNESS = botPad.h / 2 - Math.abs(tgpong.y + tgpong.s / 2 - (botPad.y + botPad.h / 2));
+			if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
+				tgpong.a = 0 - tgpong.a + Math.PI * 2;
+				if (tgpong.y + tgpong.s / 2 < botPad.y + botPad.h / 2) tgpong.y = botPad.y - tgpong.s;
+				else tgpong.y = botPad.y + botPad.h;
+			} else {
+				tgpong.a = Math.PI - tgpong.a;
+				tgpong.v += 1;
+				if (tgpong.x + tgpong.s / 2 < botPad.x + botPad.w / 2) tgpong.x = botPad.x - tgpong.s;
+				else tgpong.x = botPad.x + botPad.w;
 			}
 		}
 
@@ -391,6 +423,7 @@ function pongPhysics() {
 			tgpong.x = canvas.width / 2;
 			tgpong.y = canvas.height / 2;
 			tgpong.a = Math.random() * Math.PI * 2;
+			tgpong.motionless = { _bool: true, extraSize: 40, opacity: 0 };
 		}
 	}
 }
@@ -440,6 +473,6 @@ F.load().then((font) => {
 		}
 	}
 
-	addPong(20);
+	addPong(1);
 	game();
 });
