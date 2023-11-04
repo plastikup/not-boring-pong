@@ -209,6 +209,7 @@ function drawPlayerPad() {
 	ctxS.fillRect(playerPad.x, playerPad.y, playerPad.w, playerPad.h, 'white', playerPad.velocityRotation);
 }
 
+//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
 function pongPhysics() {
 	for (let i = 0; i < pong.length; i++) {
 		let tgpong = pong[i];
@@ -225,37 +226,57 @@ function pongPhysics() {
 		tgpong.y = Math.min(Math.max(tgpong.y + Math.sin(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.height / 64) * 65);
 		tgpong.v = Math.min(Math.max((tgpong.v - MIN_PONG_SPEED) / 1.025 + MIN_PONG_SPEED, MIN_PONG_SPEED), 40);
 
-		// bounce off wall/wedge if applies
+		// bounce off wall/wedge/bouncers if applies
 		if (Math.abs(tgpong.y + tgpong.s / 2 - canvas.height / 2) > (canvas.height - tgpong.s) / 2) {
 			tgpong.y = Math.min(Math.max(tgpong.y, 0), canvas.height - tgpong.s);
 			tgpong.a = Math.PI * 2 - tgpong.a;
 		}
-		//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
-		//tgpong.y > -tgpong.x - canvas.width + UIS * 1.414
-		if (tgpong.y < -tgpong.x + UIS * 1.414) { // top left
+		if (tgpong.y < -tgpong.x + UIS * 1.414) {
+			// top left
 			tgpong.a = Math.PI * 1.5 - tgpong.a;
 			const incrX = -tgpong.y + UIS * 1.414;
 			const incrY = -tgpong.x + UIS * 1.414;
 			tgpong.x += incrX - tgpong.x + 1;
 			tgpong.y += incrY - tgpong.y + 1;
-		} else if (tgpong.y < tgpong.x + tgpong.s - canvas.width + UIS * 1.414) { // top right
+		} else if (tgpong.y < tgpong.x + tgpong.s - canvas.width + UIS * 1.414) {
+			// top right
 			tgpong.a = Math.PI * 0.5 - tgpong.a;
 			const incrX = tgpong.y - tgpong.s + canvas.width - UIS * 1.414;
 			const incrY = tgpong.x + tgpong.s - canvas.width + UIS * 1.414;
 			tgpong.x += incrX - tgpong.x + 1;
 			tgpong.y += incrY - tgpong.y + 1;
-		} else if (tgpong.y + tgpong.s > tgpong.x + canvas.height - UIS * 1.414) { // bottom left
+		} else if (tgpong.y + tgpong.s > tgpong.x + canvas.height - UIS * 1.414) {
+			// bottom left
 			tgpong.a = Math.PI * 0.5 - tgpong.a;
 			const incrX = tgpong.y + tgpong.s - canvas.height + UIS * 1.414;
 			const incrY = tgpong.x - tgpong.s + canvas.height - UIS * 1.414;
 			tgpong.x += incrX - tgpong.x + 1;
 			tgpong.y += incrY - tgpong.y + 1;
-		} else if (tgpong.y + tgpong.s > -tgpong.x - tgpong.s + canvas.width + canvas.height - UIS * 1.414) { // bottom right
+		} else if (tgpong.y + tgpong.s > -tgpong.x - tgpong.s + canvas.width + canvas.height - UIS * 1.414) {
+			// bottom right
 			tgpong.a = Math.PI * 1.5 - tgpong.a;
 			const incrX = -tgpong.y - tgpong.s * 2 + canvas.width + canvas.height - UIS * 1.414;
 			const incrY = -tgpong.x - tgpong.s * 2 + canvas.width + canvas.height - UIS * 1.414;
 			tgpong.x += incrX - tgpong.x + 1;
 			tgpong.y += incrY - tgpong.y + 1;
+		}
+		const a = Math.abs(tgpong.x + tgpong.s / 2 - canvas.width / 2);
+		const b = Math.abs(tgpong.y + tgpong.s / 2 - canvas.height / 2) - canvas.height / 2;
+		const c = Math.sqrt(a * a + b * b);
+		const r = UIS + (tgpong.s * 1.414 + tgpong.s) / 4;
+		if (c < r) {
+			//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
+			if (tgpong.y + tgpong.s / 2 < canvas.height / 2) {
+				const angleToBouncer = Math.atan2(tgpong.y + tgpong.s / 2, tgpong.x + tgpong.s / 2 - canvas.width / 2);
+				tgpong.a = 2 * (angleToBouncer - Math.PI / 2) - tgpong.a;
+				tgpong.x = Math.cos(angleToBouncer) * (r + 2) + canvas.width / 2 - tgpong.s / 2;
+				tgpong.y = Math.sin(angleToBouncer) * (r + 2) - tgpong.s / 2;
+			} else {
+				const angleToBouncer = Math.atan2(tgpong.y + tgpong.s / 2 - canvas.height, tgpong.x + tgpong.s / 2 - canvas.width / 2);
+				tgpong.a = 2 * (angleToBouncer - Math.PI / 2) - tgpong.a;
+				tgpong.x = Math.cos(angleToBouncer) * (r + 2) + canvas.width / 2 - tgpong.s / 2;
+				tgpong.y = Math.sin(angleToBouncer) * (r + 2) + canvas.height - tgpong.s / 2;
+			}
 		}
 
 		// collision with pad
