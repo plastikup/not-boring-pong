@@ -57,6 +57,9 @@ let ctxS = {
 			case 'tl':
 				ctx.fillText(text, x, y + boundingBox.actualBoundingBoxAscent + boundingBox.actualBoundingBoxDescent);
 				break;
+			case 'tr':
+				ctx.fillText(text, x - boundingBox.width, y + boundingBox.actualBoundingBoxAscent + boundingBox.actualBoundingBoxDescent);
+				break;
 			case 'c':
 				ctx.fillText(text, x - boundingBox.width / 2, y + (boundingBox.actualBoundingBoxAscent + boundingBox.actualBoundingBoxDescent) / 2);
 				break;
@@ -198,7 +201,9 @@ function game() {
 }
 
 function drawBoard() {
-	ctxS.fillText('text', '#FFF', 36, 0, 0);
+	const secondsSince = Math.floor((180 - (Date.now() - gameStartTS)/1000) % 60);
+	const minutesSince = Math.floor(3 - (Date.now() - gameStartTS)/60000);
+	ctxS.fillText(`${minutesSince.toString().padStart(2, '0')}${secondsSince % 2 == 0 ? ' ' : ':'}${secondsSince.toString().padStart(2, '0')}`, '#FFD', 36, canvas.width - UIS * 1.414 - 5, 5, 'tr');
 
 	// middle lines
 	for (let i = 0; i < Math.ceil(canvas.height / UIS); i++) {
@@ -226,8 +231,8 @@ function drawPads() {
 
 	// botPad
 	if (botPad.tgpong == undefined) botPad.tgpong = pong[0];
-	let mostLeft = botPad.tgpong.x;
-	for (let i = 1; i < 5; i++) {
+	let mostLeft = Infinity;
+	for (let i = 1; i < Math.ceil(collisionMap[0].length / 2); i++) {
 		for (let j = 0; j < collisionMap.length; j++) {
 			const cell = collisionMap[j][i];
 			if (cell.length == 0) continue;
@@ -238,7 +243,7 @@ function drawPads() {
 		}
 		if (mostLeft != Infinity) break;
 	}
-	botPad.velocityY = Math.min(Math.max(((botPad.tgpong.y - botPad.y - botPad.h / 2) / 20 + botPad.velocityY) * 0.8, -200), 200);
+	botPad.velocityY = Math.min(Math.max(((botPad.tgpong.y - botPad.y - botPad.h / 2 + botPad.tgpong.s / 2) / 20 + botPad.velocityY) * 0.8, -200), 200);
 	botPad.y = Math.max(Math.min(botPad.y + botPad.velocityY, canvas.height - playerPad.h - UIS * 1.414), UIS * 1.414);
 	//botPad.y = botPad.tgpong.y;
 	ctxS.fillRect(botPad.x, botPad.y, botPad.w, botPad.h, 'white');
@@ -433,8 +438,8 @@ function pongPhysics() {
 
 		// if outsite reset pong
 		if (tools.isOutOfBound(tgpong.x, tgpong.y, tgpong.s, tgpong.s, true)) {
-			tgpong.x = canvas.width / 2;
-			tgpong.y = canvas.height / 2;
+			tgpong.x = canvas.width / 2 - tgpong.s / 2;
+			tgpong.y = canvas.height / 2 - tgpong.s / 2;
 			tgpong.a = Math.random() * Math.PI * 2;
 			tgpong.motionless = { _bool: true, extraSize: 40, opacity: 0 };
 		}
