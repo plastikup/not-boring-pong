@@ -33,6 +33,22 @@ let botPad = {
 	velocityY: 0,
 	tgpong: undefined,
 };
+let goals = {
+	bot: {
+		count: 0,
+		newGoal: {
+			_bool: true,
+			i: 0,
+		},
+	},
+	player: {
+		count: 0,
+		newGoal: {
+			_bool: false,
+			i: 0,
+		},
+	},
+};
 
 let bouncersExtraRadius = {
 	top: 0,
@@ -190,7 +206,7 @@ document.addEventListener('mousemove', function (e) {
 function game() {
 	ctxS.fillRect(0, 0, canvas.width, canvas.height, '#0008');
 
-	if (MIN_PONG_SPEED < 10) MIN_PONG_SPEED += 0.0015;
+	if (MIN_PONG_SPEED < 9) MIN_PONG_SPEED += 0.0015;
 	if (Math.floor((Date.now() - gameStartTS) / 10000) - pong.length > 0 && pong.length < MAX_PONG_COUNT) addPong(1);
 
 	drawBoard();
@@ -201,9 +217,15 @@ function game() {
 }
 
 function drawBoard() {
-	const secondsSince = Math.floor((180 - (Date.now() - gameStartTS)/1000) % 60);
-	const minutesSince = Math.floor(3 - (Date.now() - gameStartTS)/60000);
-	ctxS.fillText(`${minutesSince.toString().padStart(2, '0')}${secondsSince % 2 == 0 ? ' ' : ':'}${secondsSince.toString().padStart(2, '0')}`, '#FFD', 36, canvas.width - UIS * 1.414 - 5, 5, 'tr');
+	// timer
+	const secondsSince = Math.max(Math.floor((180 - (Date.now() - gameStartTS) / 1000) % 60), 0);
+	const minutesSince = Math.max(Math.floor(3 - (Date.now() - gameStartTS) / 60000), 0);
+	ctxS.fillText(`${minutesSince.toString().padStart(2, '0')}${secondsSince % 2 == 0 ? ':' : ' '}${secondsSince.toString().padStart(2, '0')}`, '#FFD', 36, canvas.width - UIS * 1.414 - 5, 5, 'tr');
+	// goals
+	ctxS.fillText(`${goals.bot.count} goal${goals.bot.count > 1 ? 's' : ''}`, '#FFD', 36 + goals.bot.newGoal._bool * Math.sin(goals.bot.newGoal.i++ * (Math.PI / 18)) * 10, canvas.width / 2 - UIS - 5, 5, 'tr');
+	ctxS.fillText(`${goals.player.count} goal${goals.player.count > 1 ? 's' : ''}`, '#FFD', 36 + goals.player.newGoal._bool * Math.sin(goals.player.newGoal.i++ * (Math.PI / 18)) * 10, canvas.width / 2 + UIS + 5, 5, 'tl');
+	if (goals.bot.newGoal._bool && goals.bot.newGoal.i > 18) goals.bot.newGoal._bool = false;
+	if (goals.player.newGoal._bool && goals.player.newGoal.i > 18) goals.player.newGoal._bool = false;
 
 	// middle lines
 	for (let i = 0; i < Math.ceil(canvas.height / UIS); i++) {
@@ -438,6 +460,13 @@ function pongPhysics() {
 
 		// if outsite reset pong
 		if (tools.isOutOfBound(tgpong.x, tgpong.y, tgpong.s, tgpong.s, true)) {
+			if (tgpong.x > canvas.width / 2) goals.bot.count++;
+			else goals.player.count++;
+
+			goals.bot.newGoal._bool = true;
+			goals.bot.newGoal.i = 0;
+
+			tgpong.s = Math.random() * 20 + 32;
 			tgpong.x = canvas.width / 2 - tgpong.s / 2;
 			tgpong.y = canvas.height / 2 - tgpong.s / 2;
 			tgpong.a = Math.random() * Math.PI * 2;
