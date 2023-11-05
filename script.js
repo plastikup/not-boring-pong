@@ -351,7 +351,7 @@ function pongPhysics() {
 		}
 
 		// draw pong
-		if (tgpong.pongType == 'pong') ctxS.fillRect(tgpong.x, tgpong.y, tgpong.s, tgpong.s, tgpong.fillStyle);
+		if (tgpong.pongType._type == 'pong') ctxS.fillRect(tgpong.x, tgpong.y, tgpong.s, tgpong.s, tgpong.fillStyle);
 		else ctxS.fillRect(tgpong.x, tgpong.y, tgpong.s, tgpong.s, '#AAA');
 
 		// move pong
@@ -413,7 +413,7 @@ function pongPhysics() {
 				bouncersExtraRadius.bottom += 20;
 			}
 			tgpong.v += 7;
-			if (tgpong.pongType == 'pong')
+			if (tgpong.pongType._type == 'pong')
 				switch (1) {
 					case 0:
 						addPong(1, { _type: 'freeze', src: '/' });
@@ -467,11 +467,6 @@ function pongPhysics() {
 				else tgpong.x = botPad.x + botPad.w;
 			}
 		}
-		/*
-playerPad.superpower.larger = {_bool: true, extraSize: 500};
-playerPad.superpower.freeze = {_bool: true, startTS: Infinity};
-addPong(10);
-		*/
 
 		// log into collision table
 		const ocmi = collisionMap[tgpong.ogy][tgpong.ogx].indexOf(tgpong);
@@ -491,7 +486,7 @@ addPong(10);
 					const collisionCell = arrLine[tgpong.gx + j];
 					if (collisionCell != undefined) {
 						collisionCell.forEach((otherPong) => {
-							if (otherPong != tgpong && !otherPong.motionless._bool && otherPong.pongID > tgpong.pongID && !tgpong.cannotCollideWith.includes(otherPong.pongID)) {
+							if (otherPong != tgpong && !otherPong.motionless._bool && otherPong.pongID > tgpong.pongID && !tgpong.cannotCollideWith.includes(otherPong.pongID) && tgpong.pongType._type === otherPong.pongType._type) {
 								if (Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s)) < (otherPong.s + tgpong.s) / 2 && Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s)) < (otherPong.s + tgpong.s) / 2) {
 									const MY_OLD_A = tgpong.a;
 									const MY_OLD_X = tgpong.x;
@@ -543,7 +538,7 @@ addPong(10);
 
 		// if outsite reset pong
 		if (tools.isOutOfBound(tgpong.x, tgpong.y, tgpong.s, tgpong.s, true)) {
-			if (tgpong.pongType != 'pong') {
+			if (tgpong.pongType._type != 'pong') {
 				if (tgpong.x > canvas.width / 2) {
 					if (tgpong.pongType._type == 'freeze') {
 						botPad.superpower.freeze._bool = true;
@@ -602,7 +597,7 @@ addPong(10);
 	}
 }
 
-function addPong(times = 1, pongType = 'pong') {
+function addPong(times = 1, pongType = {_type: 'pong'}) {
 	for (let i = 0; i < times; i++) {
 		const randomAngle = 2 * Math.PI * Math.random();
 		let idx = pong.push({
