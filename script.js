@@ -80,6 +80,23 @@ let goals = {
 		},
 	},
 };
+let newSuperpowerAnnouncement = {
+	_fillStyle: {
+		freeze: '#09E',
+		larger: '#0D0',
+		bouncer: '#FA0',
+	},
+	bot: {
+		_bool: false,
+		type: null,
+		i: 0,
+	},
+	player: {
+		_bool: false,
+		type: null,
+		i: 0,
+	},
+};
 
 let bouncersExtraRadius = {
 	top: 0,
@@ -240,17 +257,6 @@ document.addEventListener('mousemove', function (e) {
 		playerPad.velocityY = playerPad.y - NEW_Y;
 		playerPad.y = NEW_Y;
 	}
-
-	/*
-	const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
-	let realPongX = e.offsetX;
-	let realPongY = e.offsetY;
-	let realPlatfX = playerPad.x + playerPad.w / 2;
-	let realPlatfY = playerPad.y + (playerPad.h + playerExtraSize) / 2;
-	if (Math.abs(realPongY - realPlatfY) < (playerPad.h + playerExtraSize) / 2 && Math.abs(realPongX - realPlatfX) < playerPad.w / 2) {
-		console.log('positive');
-	}
-	*/
 });
 
 function game() {
@@ -259,6 +265,7 @@ function game() {
 	if (MIN_PONG_SPEED < 9) MIN_PONG_SPEED += 0.0015;
 	if (Math.floor((Date.now() - gameStartTS) / 10000) - (pong.length - specialsCount) > 0 && pong.length - specialsCount < MAX_PONG_COUNT) addPong(1);
 
+	superpowerPopup();
 	drawBoard();
 	drawPads();
 	pongPhysics();
@@ -406,7 +413,6 @@ function pongPhysics() {
 		const c = Math.sqrt(a * a + b * b);
 		const r = UIS + (tgpong.s * 1.414 + tgpong.s) / 4;
 		if (c < r) {
-			//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
 			if (tgpong.y + tgpong.s / 2 < canvas.height / 2) {
 				const angleToBouncer = Math.atan2(tgpong.y + tgpong.s / 2, tgpong.x + tgpong.s / 2 - canvas.width / 2);
 				tgpong.a = 2 * (angleToBouncer - Math.PI / 2) - tgpong.a;
@@ -421,7 +427,7 @@ function pongPhysics() {
 				bouncersExtraRadius.bottom += 20;
 			}
 			tgpong.v += 7;
-			if (tgpong.pongType._type == 'pong') {
+			if (tgpong.pongType._type == 'pong' && specialsCount < 5) {
 				let img = new Image();
 				switch (Math.floor(Math.random() * 3)) {
 					case 0:
@@ -561,23 +567,47 @@ function pongPhysics() {
 					if (tgpong.pongType._type == 'freeze') {
 						botPad.superpower.freeze._bool = true;
 						botPad.superpower.freeze.startTS = Date.now();
+
+						newSuperpowerAnnouncement.bot._bool = true;
+						newSuperpowerAnnouncement.bot.type = 'freeze';
+						newSuperpowerAnnouncement.bot.i = 0;
 					} else if (tgpong.pongType._type == 'larger') {
 						playerPad.superpower.larger._bool = true;
 						playerPad.superpower.larger.extraSize = canvas.height / 5;
+
+						newSuperpowerAnnouncement.player._bool = true;
+						newSuperpowerAnnouncement.player.type = 'larger';
+						newSuperpowerAnnouncement.player.i = 0;
 					} else if (tgpong.pongType._type == 'bouncer') {
 						playerPad.superpower.bouncer._bool = true;
 						playerPad.superpower.bouncer.startTS = Date.now();
+
+						newSuperpowerAnnouncement.player._bool = true;
+						newSuperpowerAnnouncement.player.type = 'bouncer';
+						newSuperpowerAnnouncement.player.i = 0;
 					}
 				} else {
 					if (tgpong.pongType._type == 'freeze') {
 						playerPad.superpower.freeze._bool = true;
 						playerPad.superpower.freeze.startTS = Date.now();
+
+						newSuperpowerAnnouncement.player._bool = true;
+						newSuperpowerAnnouncement.player.type = 'freeze';
+						newSuperpowerAnnouncement.player.i = 0;
 					} else if (tgpong.pongType._type == 'larger') {
 						botPad.superpower.larger._bool = true;
 						botPad.superpower.larger.extraSize = canvas.height / 5;
+
+						newSuperpowerAnnouncement.bot._bool = true;
+						newSuperpowerAnnouncement.bot.type = 'larger';
+						newSuperpowerAnnouncement.bot.i = 0;
 					} else if (tgpong.pongType._type == 'bouncer') {
 						botPad.superpower.bouncer._bool = true;
 						botPad.superpower.bouncer.startTS = Date.now();
+
+						newSuperpowerAnnouncement.bot._bool = true;
+						newSuperpowerAnnouncement.bot.type = 'bouncer';
+						newSuperpowerAnnouncement.bot.i = 0;
 					}
 				}
 				console.log(tgpong.pongType._type);
@@ -613,6 +643,47 @@ function pongPhysics() {
 			tgpong.a = Math.random() * Math.PI * 2;
 			tgpong.motionless = { _bool: true, extraSize: 40, opacity: 0 };
 		}
+	}
+}
+
+function superpowerPopup() {
+	if (newSuperpowerAnnouncement.bot._bool) {
+		const shorthand = newSuperpowerAnnouncement.bot;
+
+		let alpha = '8';
+		if (shorthand.i < 8) alpha = shorthand.i;
+		else if (shorthand.i > 172) alpha = (180 - shorthand.i);
+		ctxS.fillRect(0, 0, canvas.width / 2, canvas.height, newSuperpowerAnnouncement._fillStyle[shorthand.type] + alpha);
+
+		let text = '';
+		if (shorthand.type == 'freeze') text = `You got FREEZED!`;
+		else if (shorthand.type == 'larger') text = `You WIDENED!`;
+		else text = `You are BOUNCY!`;
+		ctxS.fillText(text, '#FFF' + alpha, 36, canvas.width / 4, canvas.height / 2, 'c');
+		if (shorthand.i >= 180) {
+			shorthand._bool = false;
+			shorthand.type = null;
+			shorthand.i = 0;
+		} else shorthand.i++;
+	}
+	if (newSuperpowerAnnouncement.player._bool) {
+		const shorthand = newSuperpowerAnnouncement.player;
+
+		let alpha = '8';
+		if (shorthand.i < 8) alpha = shorthand.i;
+		else if (shorthand.i > 172) alpha = (180 - shorthand.i);
+		ctxS.fillRect(canvas.width / 2, 0, canvas.width / 2, canvas.height, newSuperpowerAnnouncement._fillStyle[shorthand.type] + alpha);
+
+		let text = '';
+		if (shorthand.type == 'freeze') text = `You got FREEZED!`;
+		else if (shorthand.type == 'larger') text = `You WIDENED!`;
+		else text = `You are BOUNCY!`;
+		ctxS.fillText(text, '#FFF' + alpha, 36, canvas.width * 0.75, canvas.height / 2, 'c');
+		if (shorthand.i >= 180) {
+			shorthand._bool = false;
+			shorthand.type = null;
+			shorthand.i = 0;
+		} else shorthand.i++;
 	}
 }
 
