@@ -250,14 +250,17 @@ async function intro() {
 	animateTitle();
 }
 
-document.addEventListener('mousemove', function (e) {
+document.addEventListener('mousemove', onMove);
+document.addEventListener('ontouchmove', onMove);
+
+function onMove (e) {
 	if (!playerPad.superpower.freeze._bool) {
 		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
 		const NEW_Y = Math.max(Math.min(e.offsetY - (playerPad.h + playerExtraSize) / 2, canvas.height - playerPad.h - playerExtraSize - UIS * 1.414), UIS * 1.414);
 		playerPad.velocityY = playerPad.y - NEW_Y;
 		playerPad.y = NEW_Y;
 	}
-});
+}
 
 function game() {
 	ctxS.fillRect(0, 0, canvas.width, canvas.height, '#0008');
