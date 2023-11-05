@@ -130,6 +130,9 @@ let ctxS = {
 		ctx.arc(x, y, r, 0, Math.PI * 2, false);
 		ctx.fill();
 	},
+	drawImage: function (src, x, y, w, h) {
+		ctx.drawImage(src, x, y, w, h);
+	},
 };
 
 let tools = {
@@ -353,7 +356,7 @@ function pongPhysics() {
 
 		// draw pong
 		if (tgpong.pongType._type == 'pong') ctxS.fillRect(tgpong.x, tgpong.y, tgpong.s, tgpong.s, tgpong.fillStyle);
-		else ctxS.fillRect(tgpong.x, tgpong.y, tgpong.s, tgpong.s, '#AAA');
+		else ctxS.drawImage(tgpong.pongType.src, tgpong.x, tgpong.y, tgpong.s, tgpong.s);
 
 		// move pong
 		tgpong.x = Math.min(Math.max(tgpong.x + Math.cos(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.width / 64) * 65);
@@ -415,22 +418,27 @@ function pongPhysics() {
 				bouncersExtraRadius.bottom += 20;
 			}
 			tgpong.v += 7;
-			if (tgpong.pongType._type == 'pong')
+			if (tgpong.pongType._type == 'pong'){
+				let img = new Image();
 				switch (Math.floor(Math.random() * 3)) {
 					case 0:
-						addPong(1, { _type: 'freeze', src: '/' });
+						img.src = './img/freeze.png'
+						addPong(1, { _type: 'freeze', src: img });
 						break;
 					case 1:
-						addPong(1, { _type: 'larger', src: '/' });
+						img.src = './img/larger.png'
+						addPong(1, { _type: 'larger', src: img });
 						break;
 					case 2:
-						addPong(1, { _type: 'bouncer', src: '/' });
+						img.src = './img/bouncer.png'
+						addPong(1, { _type: 'bouncer', src: img });
 						break;
 
 					default:
 						console.error('Invalid type of specials');
 						break;
 				}
+			}
 		}
 
 		// collision with pad
