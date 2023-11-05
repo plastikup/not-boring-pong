@@ -656,9 +656,9 @@ function superpowerPopup() {
 		ctxS.fillRect(0, 0, canvas.width / 2, canvas.height, newSuperpowerAnnouncement._fillStyle[shorthand.type] + alpha);
 
 		let text = '';
-		if (shorthand.type == 'freeze') text = `You got FREEZED!`;
+		if (shorthand.type == 'freeze') text = `You got FROZEN!`;
 		else if (shorthand.type == 'larger') text = `You WIDENED!`;
-		else text = `You are BOUNCY!`;
+		else text = `You became BOUNCY!`;
 		ctxS.fillText(text, '#FFF' + alpha, 36, canvas.width / 4, canvas.height / 2, 'c');
 		if (shorthand.i >= 180) {
 			shorthand._bool = false;
@@ -675,9 +675,9 @@ function superpowerPopup() {
 		ctxS.fillRect(canvas.width / 2, 0, canvas.width / 2, canvas.height, newSuperpowerAnnouncement._fillStyle[shorthand.type] + alpha);
 
 		let text = '';
-		if (shorthand.type == 'freeze') text = `You got FREEZED!`;
+		if (shorthand.type == 'freeze') text = `You got FROZEN!`;
 		else if (shorthand.type == 'larger') text = `You WIDENED!`;
-		else text = `You are BOUNCY!`;
+		else text = `You became BOUNCY!`;
 		ctxS.fillText(text, '#FFF' + alpha, 36, canvas.width * 0.75, canvas.height / 2, 'c');
 		if (shorthand.i >= 180) {
 			shorthand._bool = false;
