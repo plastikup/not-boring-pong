@@ -416,7 +416,7 @@ function pongPhysics() {
 			}
 			tgpong.v += 7;
 			if (tgpong.pongType._type == 'pong')
-				switch (1) {
+				switch (Math.floor(Math.random() * 3)) {
 					case 0:
 						addPong(1, { _type: 'freeze', src: '/' });
 						break;
@@ -428,7 +428,7 @@ function pongPhysics() {
 						break;
 
 					default:
-						console.error('invalid type of gift');
+						console.error('Invalid type of specials');
 						break;
 				}
 		}
@@ -448,7 +448,7 @@ function pongPhysics() {
 				else tgpong.y = playerPad.y + playerPad.h + playerExtraSize;
 			} else {
 				tgpong.a = (playerPad.velocityRotation + Math.PI / 2) * 2 - tgpong.a;
-				tgpong.v += 1 + Math.abs(playerPad.velocityRotation) * 5;
+				tgpong.v += 1 + Math.abs(playerPad.velocityRotation) * 5 + playerPad.superpower.bouncer._bool * 12;
 				if (realPongX < realPlatfX) tgpong.x = playerPad.x - tgpong.s;
 				else tgpong.x = playerPad.x + playerPad.w;
 			}
@@ -465,6 +465,7 @@ function pongPhysics() {
 				else tgpong.y = botPad.y + botPad.h + botExtraSize;
 			} else {
 				tgpong.a = Math.PI - tgpong.a;
+				tgpong.v += botPad.superpower.bouncer._bool * 12;
 				if (realPongX < realPlatfX) tgpong.x = botPad.x - tgpong.s;
 				else tgpong.x = botPad.x + botPad.w;
 			}
