@@ -11,10 +11,11 @@ canvas.height = innerHeight - UIS / 4;
 
 /* --- VARIABLES --- */
 
-let MIN_PONG_SPEED = 4;
+let MIN_PONG_SPEED = 5;
 let MAX_PONG_COUNT = 5;
 const SUPERPOWER_TS_EFFECTIVE = 5000;
 let pongIDCount = 0;
+let specialsCount = 0;
 
 let gameScore = 0;
 let gameStartTS = Date.now();
@@ -251,7 +252,7 @@ function game() {
 	ctxS.fillRect(0, 0, canvas.width, canvas.height, '#0008');
 
 	if (MIN_PONG_SPEED < 9) MIN_PONG_SPEED += 0.0015;
-	if (Math.floor((Date.now() - gameStartTS) / 10000) - pong.length > 0 && pong.length < MAX_PONG_COUNT) addPong(1);
+	if (Math.floor((Date.now() - gameStartTS) / 10000) - (pong.length - specialsCount) > 0 && pong.length - specialsCount < MAX_PONG_COUNT) addPong(1);
 
 	drawBoard();
 	drawPads();
@@ -358,6 +359,7 @@ function pongPhysics() {
 		tgpong.x = Math.min(Math.max(tgpong.x + Math.cos(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.width / 64) * 65);
 		tgpong.y = Math.min(Math.max(tgpong.y + Math.sin(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.height / 64) * 65);
 		tgpong.v = Math.min(Math.max((tgpong.v - MIN_PONG_SPEED) / 1.025 + MIN_PONG_SPEED, MIN_PONG_SPEED), 40);
+		[tgpong.x, tgpong.y] = mapPong(tgpong.x, tgpong.y);
 
 		// bounce off wall/wedge/bouncers if applies
 		if (Math.abs(tgpong.y + tgpong.s / 2 - canvas.height / 2) > (canvas.height - tgpong.s) / 2) {
@@ -469,6 +471,8 @@ function pongPhysics() {
 		}
 
 		// log into collision table
+		[tgpong.x, tgpong.y] = mapPong(tgpong.x, tgpong.y);
+
 		const ocmi = collisionMap[tgpong.ogy][tgpong.ogx].indexOf(tgpong);
 		collisionMap[tgpong.ogy][tgpong.ogx].splice(ocmi, 1);
 
@@ -574,6 +578,7 @@ function pongPhysics() {
 					console.error(error);
 				}
 				pong.splice(i, 1);
+				specialsCount--;
 
 				continue;
 			}
@@ -597,7 +602,11 @@ function pongPhysics() {
 	}
 }
 
-function addPong(times = 1, pongType = {_type: 'pong'}) {
+function mapPong(x, y) {
+	return [Math.min(Math.max(x, -64), Math.ceil(canvas.width / 64) * 65), Math.min(Math.max(y, -64), Math.ceil(canvas.height / 64) * 65)];
+}
+
+function addPong(times = 1, pongType = { _type: 'pong' }) {
 	for (let i = 0; i < times; i++) {
 		const randomAngle = 2 * Math.PI * Math.random();
 		let idx = pong.push({
@@ -620,7 +629,7 @@ function addPong(times = 1, pongType = {_type: 'pong'}) {
 			fillStyle: '#FFF',
 			cannotCollideWith: [],
 		});
-
+		if (pongType._type != 'pong') specialsCount++;
 		collisionMap[pong[idx - 1].gy][pong[idx - 1].gx].push(pong[idx - 1]);
 	}
 }
