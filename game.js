@@ -250,13 +250,13 @@ async function intro() {
 	animateTitle();
 }
 
-document.addEventListener('mousemove', onMove);
-document.addEventListener('touchmove', (e) => onMove(e.touches[0]));
+document.addEventListener('mousemove', (e) => onMove(e.offsetY));
+document.addEventListener('touchmove', (e) => onMove(e.touches[0].clientY));
 
-function onMove (e) {
+function onMove (yTouch) {
 	if (!playerPad.superpower.freeze._bool) {
 		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
-		const NEW_Y = Math.max(Math.min(e.offsetY - (playerPad.h + playerExtraSize) / 2, canvas.height - playerPad.h - playerExtraSize - UIS * 1.414), UIS * 1.414);
+		const NEW_Y = Math.max(Math.min(yTouch - (playerPad.h + playerExtraSize) / 2, canvas.height - playerPad.h - playerExtraSize - UIS * 1.414), UIS * 1.414);
 		playerPad.velocityY = playerPad.y - NEW_Y;
 		playerPad.y = NEW_Y;
 	}
