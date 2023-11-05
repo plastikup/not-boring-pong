@@ -68,7 +68,7 @@ let goals = {
 	bot: {
 		count: 0,
 		newGoal: {
-			_bool: true,
+			_bool: false,
 			i: 0,
 		},
 	},
