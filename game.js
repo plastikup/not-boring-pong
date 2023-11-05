@@ -251,7 +251,7 @@ async function intro() {
 }
 
 document.addEventListener('mousemove', onMove);
-canvas.addEventListener('ontouchmove', onMove);
+document.addEventListener('touchmove', onMove);
 
 function onMove (e) {
 	if (!playerPad.superpower.freeze._bool) {
