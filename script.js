@@ -130,8 +130,10 @@ let ctxS = {
 		ctx.arc(x, y, r, 0, Math.PI * 2, false);
 		ctx.fill();
 	},
-	drawImage: function (src, x, y, w, h) {
+	drawImage: function (src, x, y, w, h, opacity) {
+		ctx.globalAlpha = opacity;
 		ctx.drawImage(src, x, y, w, h);
+		ctx.globalAlpha = 1;
 	},
 };
 
@@ -343,9 +345,10 @@ function pongPhysics() {
 		// exit if pong does not move
 		if (tgpong.motionless._bool) {
 			const exs = tgpong.motionless.extraSize;
-			ctxS.fillRect(tgpong.x - exs / 2, tgpong.y - exs / 2, tgpong.s + exs, tgpong.s + exs, tgpong.fillStyle + Math.floor(tgpong.motionless.opacity * 16).toString(16));
+			if (tgpong.pongType._type == 'pong') ctxS.fillRect(tgpong.x - exs / 2, tgpong.y - exs / 2, tgpong.s + exs, tgpong.s + exs, tgpong.fillStyle + Math.floor(tgpong.motionless.opacity * 16).toString(16));
+			else ctxS.drawImage(tgpong.pongType.src, tgpong.x - exs / 2, tgpong.y - exs / 2, tgpong.s + exs, tgpong.s + exs, tgpong.motionless.opacity);
 			tgpong.motionless.extraSize -= 2;
-			tgpong.motionless.opacity += 0.05;
+			tgpong.motionless.opacity = Math.min(tgpong.motionless.opacity + 0.05, 1);
 			if (tgpong.motionless.extraSize <= 0) {
 				tgpong.motionless._bool = false;
 				tgpong.motionless.extraSize = 0;
@@ -418,19 +421,19 @@ function pongPhysics() {
 				bouncersExtraRadius.bottom += 20;
 			}
 			tgpong.v += 7;
-			if (tgpong.pongType._type == 'pong'){
+			if (tgpong.pongType._type == 'pong') {
 				let img = new Image();
 				switch (Math.floor(Math.random() * 3)) {
 					case 0:
-						img.src = './img/freeze.png'
+						img.src = './img/freeze.png';
 						addPong(1, { _type: 'freeze', src: img });
 						break;
 					case 1:
-						img.src = './img/larger.png'
+						img.src = './img/larger.png';
 						addPong(1, { _type: 'larger', src: img });
 						break;
 					case 2:
-						img.src = './img/bouncer.png'
+						img.src = './img/bouncer.png';
 						addPong(1, { _type: 'bouncer', src: img });
 						break;
 
@@ -499,47 +502,49 @@ function pongPhysics() {
 					const collisionCell = arrLine[tgpong.gx + j];
 					if (collisionCell != undefined) {
 						collisionCell.forEach((otherPong) => {
-							if (otherPong != tgpong && !otherPong.motionless._bool && otherPong.pongID > tgpong.pongID && !tgpong.cannotCollideWith.includes(otherPong.pongID) && tgpong.pongType._type === otherPong.pongType._type) {
-								if (Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s)) < (otherPong.s + tgpong.s) / 2 && Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s)) < (otherPong.s + tgpong.s) / 2) {
-									const MY_OLD_A = tgpong.a;
-									const MY_OLD_X = tgpong.x;
-									const MY_OLD_Y = tgpong.y;
+							if (otherPong != tgpong && !otherPong.motionless._bool && otherPong.pongID > tgpong.pongID && !tgpong.cannotCollideWith.includes(otherPong.pongID)) {
+								if (!((tgpong.pongType._type != 'pong' && otherPong.pongType._type == 'pong') || (tgpong.pongType._type == 'pong' && otherPong.pongType._type != 'pong'))) {
+									if (Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s)) < (otherPong.s + tgpong.s) / 2 && Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s)) < (otherPong.s + tgpong.s) / 2) {
+										const MY_OLD_A = tgpong.a;
+										const MY_OLD_X = tgpong.x;
+										const MY_OLD_Y = tgpong.y;
 
-									const SIDE_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s));
-									const LEVEL_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s));
+										const SIDE_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s));
+										const LEVEL_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s));
 
-									if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
-										const a1 = ((MY_OLD_A % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-										const a2 = ((otherPong.a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-										tgpong.a = Math.atan(Math.sin(otherPong.a) / Math.cos(MY_OLD_A)) + (a1 > 0.5 * Math.PI && a1 < 1.5 * Math.PI) * Math.PI;
-										otherPong.a = Math.atan(Math.sin(MY_OLD_A) / Math.cos(otherPong.a)) + (a2 > 0.5 * Math.PI && a2 < 1.5 * Math.PI) * Math.PI;
+										if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
+											const a1 = ((MY_OLD_A % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+											const a2 = ((otherPong.a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+											tgpong.a = Math.atan(Math.sin(otherPong.a) / Math.cos(MY_OLD_A)) + (a1 > 0.5 * Math.PI && a1 < 1.5 * Math.PI) * Math.PI;
+											otherPong.a = Math.atan(Math.sin(MY_OLD_A) / Math.cos(otherPong.a)) + (a2 > 0.5 * Math.PI && a2 < 1.5 * Math.PI) * Math.PI;
 
-										if (otherPong.y < tgpong.y) {
-											//otherPong.y = tgpong.y - otherPong.s;
-											otherPong.y -= LEVEL_COLLISION_DEEPNESS / 2 + 1;
-											tgpong.y += LEVEL_COLLISION_DEEPNESS / 2 + 1;
+											if (otherPong.y < tgpong.y) {
+												//otherPong.y = tgpong.y - otherPong.s;
+												otherPong.y -= LEVEL_COLLISION_DEEPNESS / 2 + 1;
+												tgpong.y += LEVEL_COLLISION_DEEPNESS / 2 + 1;
+											} else {
+												//otherPong.y = tgpong.y + tgpong.s;
+												otherPong.y += LEVEL_COLLISION_DEEPNESS / 2 + 1;
+												tgpong.y -= LEVEL_COLLISION_DEEPNESS / 2 + 1;
+											}
 										} else {
-											//otherPong.y = tgpong.y + tgpong.s;
-											otherPong.y += LEVEL_COLLISION_DEEPNESS / 2 + 1;
-											tgpong.y -= LEVEL_COLLISION_DEEPNESS / 2 + 1;
-										}
-									} else {
-										tgpong.a = Math.atan(Math.sin(MY_OLD_A) / Math.cos(otherPong.a)) + (tgpong.x < otherPong.x) * Math.PI;
-										otherPong.a = Math.atan(Math.sin(otherPong.a) / Math.cos(MY_OLD_A)) + (tgpong.x > otherPong.x) * Math.PI;
+											tgpong.a = Math.atan(Math.sin(MY_OLD_A) / Math.cos(otherPong.a)) + (tgpong.x < otherPong.x) * Math.PI;
+											otherPong.a = Math.atan(Math.sin(otherPong.a) / Math.cos(MY_OLD_A)) + (tgpong.x > otherPong.x) * Math.PI;
 
-										if (otherPong.x + otherPong.s / 2 < tgpong.x + tgpong.s / 2) {
-											//otherPong.x = tgpong.x - otherPong.s;
-											otherPong.x -= SIDE_COLLISION_DEEPNESS / 2 + 1;
-											tgpong.x += SIDE_COLLISION_DEEPNESS / 2 + 1;
-										} else {
-											//otherPong.x = tgpong.x + tgpong.s;
-											otherPong.x += SIDE_COLLISION_DEEPNESS / 2 + 1;
-											tgpong.x -= SIDE_COLLISION_DEEPNESS / 2 + 1;
+											if (otherPong.x + otherPong.s / 2 < tgpong.x + tgpong.s / 2) {
+												//otherPong.x = tgpong.x - otherPong.s;
+												otherPong.x -= SIDE_COLLISION_DEEPNESS / 2 + 1;
+												tgpong.x += SIDE_COLLISION_DEEPNESS / 2 + 1;
+											} else {
+												//otherPong.x = tgpong.x + tgpong.s;
+												otherPong.x += SIDE_COLLISION_DEEPNESS / 2 + 1;
+												tgpong.x -= SIDE_COLLISION_DEEPNESS / 2 + 1;
+											}
 										}
+										//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
+
+										cannotCollideWith.push(otherPong.pongID);
 									}
-									//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
-
-									cannotCollideWith.push(otherPong.pongID);
 								}
 							}
 						});
