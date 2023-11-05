@@ -13,6 +13,8 @@ canvas.height = innerHeight - UIS / 4;
 
 let MIN_PONG_SPEED = 4;
 let MAX_PONG_COUNT = 5;
+const SUPERPOWER_TS_EFFECTIVE = 5000;
+let pongIDCount = 0;
 
 let gameScore = 0;
 let gameStartTS = Date.now();
@@ -24,6 +26,20 @@ let playerPad = {
 	h: canvas.height / 8,
 	velocityRotation: 0,
 	velocityY: 0,
+	superpower: {
+		freeze: {
+			_bool: false,
+			startTS: 0,
+		},
+		larger: {
+			_bool: false,
+			extraSize: 0,
+		},
+		bouncer: {
+			_bool: false,
+			startTS: 0,
+		},
+	},
 };
 let botPad = {
 	x: UIS / 2,
@@ -32,6 +48,20 @@ let botPad = {
 	h: canvas.height / 8,
 	velocityY: 0,
 	tgpong: undefined,
+	superpower: {
+		freeze: {
+			_bool: false,
+			startTS: 0,
+		},
+		larger: {
+			_bool: false,
+			extraSize: 0,
+		},
+		bouncer: {
+			_bool: false,
+			startTS: 0,
+		},
+	},
 };
 let goals = {
 	bot: {
@@ -198,9 +228,23 @@ async function intro() {
 }
 
 document.addEventListener('mousemove', function (e) {
-	const NEW_Y = Math.max(Math.min(e.offsetY - playerPad.h / 2, canvas.height - playerPad.h - UIS * 1.414), UIS * 1.414);
-	playerPad.velocityY = playerPad.y - NEW_Y;
-	playerPad.y = NEW_Y;
+	if (!playerPad.superpower.freeze._bool) {
+		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
+		const NEW_Y = Math.max(Math.min(e.offsetY - (playerPad.h + playerExtraSize) / 2, canvas.height - playerPad.h - playerExtraSize - UIS * 1.414), UIS * 1.414);
+		playerPad.velocityY = playerPad.y - NEW_Y;
+		playerPad.y = NEW_Y;
+	}
+
+	/*
+	const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
+	let realPongX = e.offsetX;
+	let realPongY = e.offsetY;
+	let realPlatfX = playerPad.x + playerPad.w / 2;
+	let realPlatfY = playerPad.y + (playerPad.h + playerExtraSize) / 2;
+	if (Math.abs(realPongY - realPlatfY) < (playerPad.h + playerExtraSize) / 2 && Math.abs(realPongX - realPlatfX) < playerPad.w / 2) {
+		console.log('positive');
+	}
+	*/
 });
 
 function game() {
@@ -218,8 +262,8 @@ function game() {
 
 function drawBoard() {
 	// timer
-	const secondsSince = Math.max(Math.floor((180 - (Date.now() - gameStartTS) / 1000) % 60), 0);
-	const minutesSince = Math.max(Math.floor(3 - (Date.now() - gameStartTS) / 60000), 0);
+	const secondsSince = Math.max(Math.floor((120 - (Date.now() - gameStartTS) / 1000) % 60), 0);
+	const minutesSince = Math.max(Math.floor(2 - (Date.now() - gameStartTS) / 60000), 0);
 	ctxS.fillText(`${minutesSince.toString().padStart(2, '0')}${secondsSince % 2 == 0 ? ':' : ' '}${secondsSince.toString().padStart(2, '0')}`, '#FFD', 36, canvas.width - UIS * 1.414 - 5, 5, 'tr');
 	// goals
 	ctxS.fillText(`${goals.bot.count} goal${goals.bot.count > 1 ? 's' : ''}`, '#FFD', 36 + goals.bot.newGoal._bool * Math.sin(goals.bot.newGoal.i++ * (Math.PI / 18)) * 10, canvas.width / 2 - UIS - 5, 5, 'tr');
@@ -249,7 +293,14 @@ function drawPads() {
 	// playerPad
 	playerPad.velocityRotation = Math.min(Math.max(playerPad.velocityRotation / 1.75 + playerPad.velocityY / 100, -Math.PI / 16), Math.PI / 16);
 	playerPad.velocityY = 0;
-	ctxS.fillRect(playerPad.x, playerPad.y, playerPad.w, playerPad.h, 'white', playerPad.velocityRotation);
+	const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
+	ctxS.fillRect(playerPad.x, playerPad.y, playerPad.w, playerPad.h + playerExtraSize, 'white', playerPad.velocityRotation);
+	if (playerPad.superpower.freeze._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= playerPad.superpower.freeze.startTS) playerPad.superpower.freeze._bool = false;
+	if (playerPad.superpower.larger._bool) {
+		playerPad.superpower.larger.extraSize -= 0.1;
+		if (playerPad.superpower.larger.extraSize <= 0) playerPad.superpower.larger._bool = false;
+	}
+	if (playerPad.superpower.bouncer._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= playerPad.superpower.bouncer.startTS) playerPad.superpower.bouncer._bool = false;
 
 	// botPad
 	if (botPad.tgpong == undefined) botPad.tgpong = pong[0];
@@ -265,10 +316,19 @@ function drawPads() {
 		}
 		if (mostLeft != Infinity) break;
 	}
-	botPad.velocityY = Math.min(Math.max(((botPad.tgpong.y - botPad.y - botPad.h / 2 + botPad.tgpong.s / 2) / 20 + botPad.velocityY) * 0.8, -200), 200);
-	botPad.y = Math.max(Math.min(botPad.y + botPad.velocityY, canvas.height - playerPad.h - UIS * 1.414), UIS * 1.414);
-	//botPad.y = botPad.tgpong.y;
-	ctxS.fillRect(botPad.x, botPad.y, botPad.w, botPad.h, 'white');
+	const botExtraSize = botPad.superpower.larger._bool * botPad.superpower.larger.extraSize;
+	if (!botPad.superpower.freeze._bool) {
+		botPad.velocityY = Math.min(Math.max(((botPad.tgpong.y - botPad.y - (botPad.h + botExtraSize) / 2 + botPad.tgpong.s / 2) / 20 + botPad.velocityY) * 0.8, -200), 200);
+		botPad.y = Math.max(Math.min(botPad.y + botPad.velocityY, canvas.height - botPad.h - botExtraSize - UIS * 1.414), UIS * 1.414);
+		//botPad.y = botPad.tgpong.y;
+	}
+	ctxS.fillRect(botPad.x, botPad.y - botExtraSize / 2, botPad.w, botPad.h + botExtraSize, 'white');
+	if (botPad.superpower.freeze._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= botPad.superpower.freeze.startTS) botPad.superpower.freeze._bool = false;
+	if (botPad.superpower.larger._bool) {
+		botPad.superpower.larger.extraSize -= 0.1;
+		if (botPad.superpower.larger.extraSize <= 0) botPad.superpower.larger._bool = false;
+	}
+	if (botPad.superpower.bouncer._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= botPad.superpower.bouncer.startTS) botPad.superpower.bouncer._bool = false;
 }
 
 //tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
@@ -291,7 +351,8 @@ function pongPhysics() {
 		}
 
 		// draw pong
-		ctxS.fillRect(tgpong.x, tgpong.y, tgpong.s, tgpong.s, tgpong.fillStyle);
+		if (tgpong.pongType == 'pong') ctxS.fillRect(tgpong.x, tgpong.y, tgpong.s, tgpong.s, tgpong.fillStyle);
+		else ctxS.fillRect(tgpong.x, tgpong.y, tgpong.s, tgpong.s, '#AAA');
 
 		// move pong
 		tgpong.x = Math.min(Math.max(tgpong.x + Math.cos(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.width / 64) * 65);
@@ -352,43 +413,65 @@ function pongPhysics() {
 				bouncersExtraRadius.bottom += 20;
 			}
 			tgpong.v += 7;
+			if (tgpong.pongType == 'pong')
+				switch (1) {
+					case 0:
+						addPong(1, { _type: 'freeze', src: '/' });
+						break;
+					case 1:
+						addPong(1, { _type: 'larger', src: '/' });
+						break;
+					case 2:
+						addPong(1, { _type: 'bouncer', src: '/' });
+						break;
+
+					default:
+						console.error('invalid type of gift');
+						break;
+				}
 		}
 
 		// collision with pad
+		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
 		let realPongX = tgpong.x + tgpong.s / 2;
 		let realPongY = tgpong.y + tgpong.s / 2;
 		let realPlatfX = playerPad.x + playerPad.w / 2;
-		let realPlatfY = playerPad.y + playerPad.h / 2;
-		if (Math.abs(realPongY - realPlatfY) < (tgpong.s + playerPad.h) / 2 && Math.abs(realPongX - realPlatfX) < (tgpong.s + playerPad.w) / 2) {
-			const SIDE_COLLISION_DEEPNESS = playerPad.w / 2 - Math.abs(tgpong.x + tgpong.s / 2 - (playerPad.x + playerPad.w / 2));
-			const LEVEL_COLLISION_DEEPNESS = playerPad.h / 2 - Math.abs(tgpong.y + tgpong.s / 2 - (playerPad.y + playerPad.h / 2));
+		let realPlatfY = playerPad.y + (playerPad.h + playerExtraSize) / 2;
+		if (Math.abs(realPongY - realPlatfY) < (tgpong.s + playerPad.h + playerExtraSize) / 2 && Math.abs(realPongX - realPlatfX) < (tgpong.s + playerPad.w) / 2) {
+			const SIDE_COLLISION_DEEPNESS = playerPad.w / 2 - Math.abs(realPongX / 2 - realPlatfX);
+			const LEVEL_COLLISION_DEEPNESS = (playerPad.h + playerExtraSize) / 2 - Math.abs(realPongY - realPlatfY);
 			if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
 				tgpong.a = playerPad.velocityRotation * 2 - tgpong.a + Math.PI * 2;
-				if (tgpong.y + tgpong.s / 2 < playerPad.y + playerPad.h / 2) tgpong.y = playerPad.y - tgpong.s;
-				else tgpong.y = playerPad.y + playerPad.h;
+				if (realPongY < realPlatfY) tgpong.y = playerPad.y - playerExtraSize / 2 - tgpong.s;
+				else tgpong.y = playerPad.y + playerPad.h + playerExtraSize;
 			} else {
 				tgpong.a = (playerPad.velocityRotation + Math.PI / 2) * 2 - tgpong.a;
 				tgpong.v += 1 + Math.abs(playerPad.velocityRotation) * 5;
-				if (tgpong.x + tgpong.s / 2 < playerPad.x + playerPad.w / 2) tgpong.x = playerPad.x - tgpong.s;
+				if (realPongX < realPlatfX) tgpong.x = playerPad.x - tgpong.s;
 				else tgpong.x = playerPad.x + playerPad.w;
 			}
 		}
+		const botExtraSize = botPad.superpower.larger._bool * botPad.superpower.larger.extraSize;
 		realPlatfX = botPad.x + botPad.w / 2;
-		realPlatfY = botPad.y + botPad.h / 2;
-		if (Math.abs(realPongY - realPlatfY) < (tgpong.s + botPad.h) / 2 && Math.abs(realPongX - realPlatfX) < (tgpong.s + botPad.w) / 2) {
-			const SIDE_COLLISION_DEEPNESS = botPad.w / 2 - Math.abs(tgpong.x + tgpong.s / 2 - (botPad.x + botPad.w / 2));
-			const LEVEL_COLLISION_DEEPNESS = botPad.h / 2 - Math.abs(tgpong.y + tgpong.s / 2 - (botPad.y + botPad.h / 2));
+		realPlatfY = botPad.y + (botPad.h + botExtraSize) / 2;
+		if (Math.abs(realPongY - realPlatfY) < (tgpong.s + botPad.h + botExtraSize) / 2 && Math.abs(realPongX - realPlatfX) < (tgpong.s + botPad.w) / 2) {
+			const SIDE_COLLISION_DEEPNESS = botPad.w / 2 - Math.abs(realPongX / 2 - realPlatfX);
+			const LEVEL_COLLISION_DEEPNESS = (botPad.h + botExtraSize) / 2 - Math.abs(realPongY - realPlatfY);
 			if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
-				tgpong.a = 0 - tgpong.a + Math.PI * 2;
-				if (tgpong.y + tgpong.s / 2 < botPad.y + botPad.h / 2) tgpong.y = botPad.y - tgpong.s;
-				else tgpong.y = botPad.y + botPad.h;
+				tgpong.a = -tgpong.a + Math.PI * 2;
+				if (realPongY < realPlatfY) tgpong.y = botPad.y - botExtraSize / 2 - tgpong.s;
+				else tgpong.y = botPad.y + botPad.h + botExtraSize;
 			} else {
 				tgpong.a = Math.PI - tgpong.a;
-				tgpong.v += 1;
-				if (tgpong.x + tgpong.s / 2 < botPad.x + botPad.w / 2) tgpong.x = botPad.x - tgpong.s;
+				if (realPongX < realPlatfX) tgpong.x = botPad.x - tgpong.s;
 				else tgpong.x = botPad.x + botPad.w;
 			}
 		}
+		/*
+playerPad.superpower.larger = {_bool: true, extraSize: 500};
+playerPad.superpower.freeze = {_bool: true, startTS: Infinity};
+addPong(10);
+		*/
 
 		// log into collision table
 		const ocmi = collisionMap[tgpong.ogy][tgpong.ogx].indexOf(tgpong);
@@ -460,6 +543,46 @@ function pongPhysics() {
 
 		// if outsite reset pong
 		if (tools.isOutOfBound(tgpong.x, tgpong.y, tgpong.s, tgpong.s, true)) {
+			if (tgpong.pongType != 'pong') {
+				if (tgpong.x > canvas.width / 2) {
+					if (tgpong.pongType._type == 'freeze') {
+						botPad.superpower.freeze._bool = true;
+						botPad.superpower.freeze.startTS = Date.now();
+					} else if (tgpong.pongType._type == 'larger') {
+						playerPad.superpower.larger._bool = true;
+						playerPad.superpower.larger.extraSize = canvas.height / 5;
+					} else if (tgpong.pongType._type == 'bouncer') {
+						playerPad.superpower.bouncer._bool = true;
+						playerPad.superpower.bouncer.startTS = Date.now();
+					}
+				} else {
+					if (tgpong.pongType._type == 'freeze') {
+						playerPad.superpower.freeze._bool = true;
+						playerPad.superpower.freeze.startTS = Date.now();
+					} else if (tgpong.pongType._type == 'larger') {
+						botPad.superpower.larger._bool = true;
+						botPad.superpower.larger.extraSize = canvas.height / 5;
+					} else if (tgpong.pongType._type == 'bouncer') {
+						botPad.superpower.bouncer._bool = true;
+						botPad.superpower.bouncer.startTS = Date.now();
+					}
+				}
+				console.log(tgpong.pongType._type);
+				try {
+					// why dafuk this refuses to work until i force it with a while loop
+					while (collisionMap[tgpong.gy][tgpong.gx].indexOf(tgpong) != -1) {
+						const selfIdx = collisionMap[tgpong.gy][tgpong.gx].indexOf(tgpong);
+						delete collisionMap[tgpong.gy][tgpong.gx][selfIdx];
+						collisionMap[tgpong.gy][tgpong.gx].splice(selfIdx, 1);
+					}
+				} catch (error) {
+					console.error(error);
+				}
+				pong.splice(i, 1);
+
+				continue;
+			}
+
 			if (tgpong.x > canvas.width / 2) {
 				goals.bot.count++;
 				goals.bot.newGoal._bool = true;
@@ -479,7 +602,7 @@ function pongPhysics() {
 	}
 }
 
-function addPong(times = 1) {
+function addPong(times = 1, pongType = 'pong') {
 	for (let i = 0; i < times; i++) {
 		const randomAngle = 2 * Math.PI * Math.random();
 		let idx = pong.push({
@@ -497,7 +620,8 @@ function addPong(times = 1) {
 				extraSize: 40,
 				opacity: 0,
 			},
-			pongID: pong.length,
+			pongID: pongIDCount++,
+			pongType: pongType,
 			fillStyle: '#FFF',
 			cannotCollideWith: [],
 		});
