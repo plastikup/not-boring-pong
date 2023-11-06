@@ -103,6 +103,13 @@ let bouncersExtraRadius = {
 	bottom: 0,
 };
 
+let menuSettings = [
+	{ description: 'timer', key: 'min', value: 2, max: 4 },
+	{ description: 'bot difficulty', key: '/5', value: 3, max: 5 },
+	{ description: 'active balls (sus)', key: '', value: 5, max: 10 },
+	{ description: 'color theme', key: '', value: 1, max: 3 },
+];
+
 let pong = [];
 let collisionMap = [];
 
@@ -167,6 +174,8 @@ let tools = {
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	},
 };
+
+/* --- MENU/INTRO --- */
 
 async function intro() {
 	let n = 0;
@@ -241,11 +250,37 @@ async function intro() {
 		else {
 			ctxS.clearRect();
 			await tools.sleep(1000);
-			game();
+			menu();
 		}
 	}
 
 	animateTitle();
+}
+
+function menu() {
+	ctxS.fillRect(0, 0, canvas.width, canvas.height, '#0008');
+
+	// title
+	ctxS.fillText('NOT BORING PONG', '#FFF', canvas.height / 10 + Math.sin(Date.now() / 500) * 5, canvas.width / 2, canvas.height / 4, 'c');
+
+	// sliders
+	let ocx = canvas.width / 2;
+	let ocy = canvas.height / 2 - canvas.height / 7;
+	for (let i = 0; i < 4; i++) {
+		ctxS.fillText(`${menuSettings[i].description}: ${menuSettings[i].value}${menuSettings[i].key}`, '#FFF', canvas.height / 30, ocx, ocy, 'c');
+		ctxS.fillRect(ocx - canvas.width / 8 - canvas.height / 32 - 8, ocy + canvas.height / 32, canvas.height / 32, canvas.height / 32, '#DDD');
+		ctxS.fillRect(ocx + canvas.width / 8 + 8, ocy + canvas.height / 32, canvas.height / 32, canvas.height / 32, '#DDD');
+		/*
+		ctxS.fillText('-', '#000', canvas.height / 32, ocx - canvas.width / 8 - canvas.height / 64 - 8, ocy + canvas.height / 32 + canvas.height / 64, 'c');
+		ctxS.fillText('+', '#000', canvas.height / 32, ocx + canvas.width / 8 + canvas.height / 64 + 8, ocy + canvas.height / 32 + canvas.height / 64, 'c');
+		*/
+
+		ctxS.fillRect(ocx - canvas.width / 8, ocy + canvas.height / 32, canvas.width / 4, canvas.height / 32, '#FFF');
+
+		ocy += canvas.height / 8;
+	}
+
+	requestAnimationFrame(menu);
 }
 
 /* --- GAME --- */
@@ -742,5 +777,6 @@ F.load().then((font) => {
 	}
 
 	addPong(1);
-	game();
+	//game();
+	menu();
 });
