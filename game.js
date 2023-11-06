@@ -168,8 +168,6 @@ let tools = {
 	},
 };
 
-/* --- GAME --- */
-
 async function intro() {
 	let n = 0;
 	let pixelizedWordArray = [];
@@ -250,10 +248,12 @@ async function intro() {
 	animateTitle();
 }
 
-document.addEventListener('mousemove', (e) => onMove(e.offsetY));
-document.addEventListener('touchmove', (e) => onMove(e.touches[0].clientY));
+/* --- GAME --- */
 
-function onMove (yTouch) {
+document.addEventListener('mousemove', (e) => onMove(e.offsetY)); // computer client
+document.addEventListener('touchmove', (e) => onMove(e.touches[0].clientY)); // mobile client
+
+function onMove(yTouch) {
 	if (!playerPad.superpower.freeze._bool) {
 		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
 		const NEW_Y = Math.max(Math.min(yTouch - (playerPad.h + playerExtraSize) / 2, canvas.height - playerPad.h - playerExtraSize - UIS * 1.414), UIS * 1.414);
@@ -263,6 +263,7 @@ function onMove (yTouch) {
 }
 
 function game() {
+	//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
 	ctxS.fillRect(0, 0, canvas.width, canvas.height, '#0008');
 
 	if (MIN_PONG_SPEED < 9) MIN_PONG_SPEED += 0.0015;
@@ -274,424 +275,424 @@ function game() {
 	pongPhysics();
 
 	requestAnimationFrame(game);
-}
 
-function drawBoard() {
-	// timer
-	const secondsSince = Math.max(Math.floor((120 - (Date.now() - gameStartTS) / 1000) % 60), 0);
-	const minutesSince = Math.max(Math.floor(2 - (Date.now() - gameStartTS) / 60000), 0);
-	ctxS.fillText(`${minutesSince.toString().padStart(2, '0')}${secondsSince % 2 == 0 ? ':' : ' '}${secondsSince.toString().padStart(2, '0')}`, '#FFD', 36, canvas.width - UIS * 1.414 - 5, 5, 'tr');
-	// goals
-	ctxS.fillText(`${goals.bot.count} goal${goals.bot.count > 1 ? 's' : ''}`, '#FFD', 36 + goals.bot.newGoal._bool * Math.sin(goals.bot.newGoal.i++ * (Math.PI / 18)) * 10, canvas.width / 2 - UIS - 5, 5, 'tr');
-	ctxS.fillText(`${goals.player.count} goal${goals.player.count > 1 ? 's' : ''}`, '#FFD', 36 + goals.player.newGoal._bool * Math.sin(goals.player.newGoal.i++ * (Math.PI / 18)) * 10, canvas.width / 2 + UIS + 5, 5, 'tl');
-	if (goals.bot.newGoal._bool && goals.bot.newGoal.i > 18) goals.bot.newGoal._bool = false;
-	if (goals.player.newGoal._bool && goals.player.newGoal.i > 18) goals.player.newGoal._bool = false;
+	function superpowerPopup() {
+		if (newSuperpowerAnnouncement.bot._bool) {
+			const shorthand = newSuperpowerAnnouncement.bot;
 
-	// middle lines
-	for (let i = 0; i < Math.ceil(canvas.height / UIS); i++) {
-		ctxS.fillRect((canvas.width - UIS / 5) / 2, (i - 0.25) * UIS + (canvas.height % UIS) / 2, UIS / 5, UIS / 2);
-	}
+			let alpha = '8';
+			if (shorthand.i < 8) alpha = shorthand.i;
+			else if (shorthand.i > 172) alpha = 180 - shorthand.i;
+			ctxS.fillRect(0, 0, canvas.width / 2, canvas.height, newSuperpowerAnnouncement._fillStyle[shorthand.type] + alpha);
 
-	// top and bottom bouncers
-	ctxS.fillCirc(canvas.width / 2, 0, UIS + bouncersExtraRadius.top, '#FFD');
-	ctxS.fillCirc(canvas.width / 2, canvas.height, UIS + bouncersExtraRadius.bottom, '#FFD');
-	bouncersExtraRadius.top *= 0.85;
-	bouncersExtraRadius.bottom *= 0.85;
-
-	// corners wedge
-	ctxS.fillRect(-UIS, -UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
-	ctxS.fillRect(canvas.width - UIS, -UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
-	ctxS.fillRect(-UIS, canvas.height - UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
-	ctxS.fillRect(canvas.width - UIS, canvas.height - UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
-}
-
-function drawPads() {
-	// playerPad
-	playerPad.velocityRotation = Math.min(Math.max(playerPad.velocityRotation / 1.75 + playerPad.velocityY / 100, -Math.PI / 16), Math.PI / 16);
-	playerPad.velocityY = 0;
-	const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
-	ctxS.fillRect(playerPad.x, playerPad.y, playerPad.w, playerPad.h + playerExtraSize, 'white', playerPad.velocityRotation);
-	if (playerPad.superpower.freeze._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= playerPad.superpower.freeze.startTS) playerPad.superpower.freeze._bool = false;
-	if (playerPad.superpower.larger._bool) {
-		playerPad.superpower.larger.extraSize -= 0.1;
-		if (playerPad.superpower.larger.extraSize <= 0) playerPad.superpower.larger._bool = false;
-	}
-	if (playerPad.superpower.bouncer._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= playerPad.superpower.bouncer.startTS) playerPad.superpower.bouncer._bool = false;
-
-	// botPad
-	if (botPad.tgpong == undefined) botPad.tgpong = pong[0];
-	let mostLeft = Infinity;
-	for (let i = 1; i < Math.ceil(collisionMap[0].length / 2); i++) {
-		for (let j = 0; j < collisionMap.length; j++) {
-			const cell = collisionMap[j][i];
-			if (cell.length == 0) continue;
-			if (cell[0].x < mostLeft) {
-				botPad.tgpong = cell[0];
-				mostLeft = cell[0].x;
-			}
+			let text = '';
+			if (shorthand.type == 'freeze') text = `You got FROZEN!`;
+			else if (shorthand.type == 'larger') text = `You WIDENED!`;
+			else text = `You became BOUNCY!`;
+			ctxS.fillText(text, '#FFF' + alpha, 36, canvas.width / 4, canvas.height / 2, 'c');
+			if (shorthand.i >= 180) {
+				shorthand._bool = false;
+				shorthand.type = null;
+				shorthand.i = 0;
+			} else shorthand.i++;
 		}
-		if (mostLeft != Infinity) break;
-	}
-	const botExtraSize = botPad.superpower.larger._bool * botPad.superpower.larger.extraSize;
-	if (!botPad.superpower.freeze._bool) {
-		botPad.velocityY = Math.min(Math.max(((botPad.tgpong.y - botPad.y - (botPad.h + botExtraSize) / 2 + botPad.tgpong.s / 2) / 20 + botPad.velocityY) * 0.8, -200), 200);
-		botPad.y = Math.max(Math.min(botPad.y + botPad.velocityY, canvas.height - botPad.h - botExtraSize - UIS * 1.414), UIS * 1.414);
-		//botPad.y = botPad.tgpong.y;
-	}
-	ctxS.fillRect(botPad.x, botPad.y - botExtraSize / 2, botPad.w, botPad.h + botExtraSize, 'white');
-	if (botPad.superpower.freeze._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= botPad.superpower.freeze.startTS) botPad.superpower.freeze._bool = false;
-	if (botPad.superpower.larger._bool) {
-		botPad.superpower.larger.extraSize -= 0.1;
-		if (botPad.superpower.larger.extraSize <= 0) botPad.superpower.larger._bool = false;
-	}
-	if (botPad.superpower.bouncer._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= botPad.superpower.bouncer.startTS) botPad.superpower.bouncer._bool = false;
-}
+		if (newSuperpowerAnnouncement.player._bool) {
+			const shorthand = newSuperpowerAnnouncement.player;
 
-//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
-function pongPhysics() {
-	for (let i = 0; i < pong.length; i++) {
-		let tgpong = pong[i];
+			let alpha = '8';
+			if (shorthand.i < 8) alpha = shorthand.i;
+			else if (shorthand.i > 172) alpha = 180 - shorthand.i;
+			ctxS.fillRect(canvas.width / 2, 0, canvas.width / 2, canvas.height, newSuperpowerAnnouncement._fillStyle[shorthand.type] + alpha);
 
-		// exit if pong does not move
-		if (tgpong.motionless._bool) {
-			const exs = tgpong.motionless.extraSize;
-			if (tgpong.pongType._type == 'pong') ctxS.fillRect(tgpong.x - exs / 2, tgpong.y - exs / 2, tgpong.s + exs, tgpong.s + exs, tgpong.fillStyle + Math.floor(tgpong.motionless.opacity * 16).toString(16));
-			else ctxS.drawImage(tgpong.pongType.src, tgpong.x - exs / 2, tgpong.y - exs / 2, tgpong.s + exs, tgpong.s + exs, tgpong.motionless.opacity);
-			tgpong.motionless.extraSize -= 2;
-			tgpong.motionless.opacity = Math.min(tgpong.motionless.opacity + 0.05, 1);
-			if (tgpong.motionless.extraSize <= 0) {
-				tgpong.motionless._bool = false;
-				tgpong.motionless.extraSize = 0;
-				tgpong.motionless.opacity = 1;
-			}
-			continue;
+			let text = '';
+			if (shorthand.type == 'freeze') text = `You got FROZEN!`;
+			else if (shorthand.type == 'larger') text = `You WIDENED!`;
+			else text = `You became BOUNCY!`;
+			ctxS.fillText(text, '#FFF' + alpha, 36, canvas.width * 0.75, canvas.height / 2, 'c');
+			if (shorthand.i >= 180) {
+				shorthand._bool = false;
+				shorthand.type = null;
+				shorthand.i = 0;
+			} else shorthand.i++;
+		}
+	}
+
+	function drawBoard() {
+		// timer
+		const secondsSince = Math.max(Math.floor((120 - (Date.now() - gameStartTS) / 1000) % 60), 0);
+		const minutesSince = Math.max(Math.floor(2 - (Date.now() - gameStartTS) / 60000), 0);
+		ctxS.fillText(`${minutesSince.toString().padStart(2, '0')}${secondsSince % 2 == 0 ? ':' : ' '}${secondsSince.toString().padStart(2, '0')}`, '#FFD', 36, canvas.width - UIS * 1.414 - 5, 5, 'tr');
+		// goals
+		ctxS.fillText(`${goals.bot.count} goal${goals.bot.count > 1 ? 's' : ''}`, '#FFD', 36 + goals.bot.newGoal._bool * Math.sin(goals.bot.newGoal.i++ * (Math.PI / 18)) * 10, canvas.width / 2 - UIS - 5, 5, 'tr');
+		ctxS.fillText(`${goals.player.count} goal${goals.player.count > 1 ? 's' : ''}`, '#FFD', 36 + goals.player.newGoal._bool * Math.sin(goals.player.newGoal.i++ * (Math.PI / 18)) * 10, canvas.width / 2 + UIS + 5, 5, 'tl');
+		if (goals.bot.newGoal._bool && goals.bot.newGoal.i > 18) goals.bot.newGoal._bool = false;
+		if (goals.player.newGoal._bool && goals.player.newGoal.i > 18) goals.player.newGoal._bool = false;
+
+		// middle lines
+		for (let i = 0; i < Math.ceil(canvas.height / UIS); i++) {
+			ctxS.fillRect((canvas.width - UIS / 5) / 2, (i - 0.25) * UIS + (canvas.height % UIS) / 2, UIS / 5, UIS / 2);
 		}
 
-		// draw pong
-		if (tgpong.pongType._type == 'pong') ctxS.fillRect(tgpong.x, tgpong.y, tgpong.s, tgpong.s, tgpong.fillStyle);
-		else ctxS.drawImage(tgpong.pongType.src, tgpong.x, tgpong.y, tgpong.s, tgpong.s);
+		// top and bottom bouncers
+		ctxS.fillCirc(canvas.width / 2, 0, UIS + bouncersExtraRadius.top, '#FFD');
+		ctxS.fillCirc(canvas.width / 2, canvas.height, UIS + bouncersExtraRadius.bottom, '#FFD');
+		bouncersExtraRadius.top *= 0.85;
+		bouncersExtraRadius.bottom *= 0.85;
 
-		// move pong
-		tgpong.x = Math.min(Math.max(tgpong.x + Math.cos(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.width / 64) * 65);
-		tgpong.y = Math.min(Math.max(tgpong.y + Math.sin(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.height / 64) * 65);
-		tgpong.v = Math.min(Math.max((tgpong.v - MIN_PONG_SPEED) / 1.025 + MIN_PONG_SPEED, MIN_PONG_SPEED), 40);
-		[tgpong.x, tgpong.y] = mapPong(tgpong.x, tgpong.y);
+		// corners wedge
+		ctxS.fillRect(-UIS, -UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
+		ctxS.fillRect(canvas.width - UIS, -UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
+		ctxS.fillRect(-UIS, canvas.height - UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
+		ctxS.fillRect(canvas.width - UIS, canvas.height - UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
+	}
 
-		// bounce off wall/wedge/bouncers if applies
-		if (Math.abs(tgpong.y + tgpong.s / 2 - canvas.height / 2) > (canvas.height - tgpong.s) / 2) {
-			tgpong.y = Math.min(Math.max(tgpong.y, 0), canvas.height - tgpong.s);
-			tgpong.a = Math.PI * 2 - tgpong.a;
+	function drawPads() {
+		// playerPad
+		playerPad.velocityRotation = Math.min(Math.max(playerPad.velocityRotation / 1.75 + playerPad.velocityY / 100, -Math.PI / 16), Math.PI / 16);
+		playerPad.velocityY = 0;
+		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
+		ctxS.fillRect(playerPad.x, playerPad.y, playerPad.w, playerPad.h + playerExtraSize, 'white', playerPad.velocityRotation);
+		if (playerPad.superpower.freeze._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= playerPad.superpower.freeze.startTS) playerPad.superpower.freeze._bool = false;
+		if (playerPad.superpower.larger._bool) {
+			playerPad.superpower.larger.extraSize -= 0.1;
+			if (playerPad.superpower.larger.extraSize <= 0) playerPad.superpower.larger._bool = false;
 		}
-		if (tgpong.y < -tgpong.x + UIS * 1.414) {
-			// top left
-			tgpong.a = Math.PI * 1.5 - tgpong.a;
-			const incrX = -tgpong.y + UIS * 1.414;
-			const incrY = -tgpong.x + UIS * 1.414;
-			tgpong.x += incrX - tgpong.x + 1;
-			tgpong.y += incrY - tgpong.y + 1;
-		} else if (tgpong.y < tgpong.x + tgpong.s - canvas.width + UIS * 1.414) {
-			// top right
-			tgpong.a = Math.PI * 0.5 - tgpong.a;
-			const incrX = tgpong.y - tgpong.s + canvas.width - UIS * 1.414;
-			const incrY = tgpong.x + tgpong.s - canvas.width + UIS * 1.414;
-			tgpong.x += incrX - tgpong.x + 1;
-			tgpong.y += incrY - tgpong.y + 1;
-		} else if (tgpong.y + tgpong.s > tgpong.x + canvas.height - UIS * 1.414) {
-			// bottom left
-			tgpong.a = Math.PI * 0.5 - tgpong.a;
-			const incrX = tgpong.y + tgpong.s - canvas.height + UIS * 1.414;
-			const incrY = tgpong.x - tgpong.s + canvas.height - UIS * 1.414;
-			tgpong.x += incrX - tgpong.x + 1;
-			tgpong.y += incrY - tgpong.y + 1;
-		} else if (tgpong.y + tgpong.s > -tgpong.x - tgpong.s + canvas.width + canvas.height - UIS * 1.414) {
-			// bottom right
-			tgpong.a = Math.PI * 1.5 - tgpong.a;
-			const incrX = -tgpong.y - tgpong.s * 2 + canvas.width + canvas.height - UIS * 1.414;
-			const incrY = -tgpong.x - tgpong.s * 2 + canvas.width + canvas.height - UIS * 1.414;
-			tgpong.x += incrX - tgpong.x + 1;
-			tgpong.y += incrY - tgpong.y + 1;
-		}
-		const a = Math.abs(tgpong.x + tgpong.s / 2 - canvas.width / 2);
-		const b = Math.abs(tgpong.y + tgpong.s / 2 - canvas.height / 2) - canvas.height / 2;
-		const c = Math.sqrt(a * a + b * b);
-		const r = UIS + (tgpong.s * 1.414 + tgpong.s) / 4;
-		if (c < r) {
-			if (tgpong.y + tgpong.s / 2 < canvas.height / 2) {
-				const angleToBouncer = Math.atan2(tgpong.y + tgpong.s / 2, tgpong.x + tgpong.s / 2 - canvas.width / 2);
-				tgpong.a = 2 * (angleToBouncer - Math.PI / 2) - tgpong.a;
-				tgpong.x = Math.cos(angleToBouncer) * (r + 2) + canvas.width / 2 - tgpong.s / 2;
-				tgpong.y = Math.sin(angleToBouncer) * (r + 2) - tgpong.s / 2;
-				bouncersExtraRadius.top += 20;
-			} else {
-				const angleToBouncer = Math.atan2(tgpong.y + tgpong.s / 2 - canvas.height, tgpong.x + tgpong.s / 2 - canvas.width / 2);
-				tgpong.a = 2 * (angleToBouncer - Math.PI / 2) - tgpong.a;
-				tgpong.x = Math.cos(angleToBouncer) * (r + 2) + canvas.width / 2 - tgpong.s / 2;
-				tgpong.y = Math.sin(angleToBouncer) * (r + 2) + canvas.height - tgpong.s / 2;
-				bouncersExtraRadius.bottom += 20;
-			}
-			tgpong.v += 7;
-			if (tgpong.pongType._type == 'pong' && specialsCount < 5) {
-				let img = new Image();
-				switch (Math.floor(Math.random() * 3)) {
-					case 0:
-						img.src = './img/freeze.png';
-						addPong(1, { _type: 'freeze', src: img });
-						break;
-					case 1:
-						img.src = './img/larger.png';
-						addPong(1, { _type: 'larger', src: img });
-						break;
-					case 2:
-						img.src = './img/bouncer.png';
-						addPong(1, { _type: 'bouncer', src: img });
-						break;
+		if (playerPad.superpower.bouncer._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= playerPad.superpower.bouncer.startTS) playerPad.superpower.bouncer._bool = false;
 
-					default:
-						console.error('Invalid type of specials');
-						break;
+		// botPad
+		if (botPad.tgpong == undefined) botPad.tgpong = pong[0];
+		let mostLeft = Infinity;
+		for (let i = 1; i < Math.ceil(collisionMap[0].length / 2); i++) {
+			for (let j = 0; j < collisionMap.length; j++) {
+				const cell = collisionMap[j][i];
+				if (cell.length == 0) continue;
+				if (cell[0].x < mostLeft) {
+					botPad.tgpong = cell[0];
+					mostLeft = cell[0].x;
 				}
 			}
-		}
-
-		// collision with pad
-		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
-		let realPongX = tgpong.x + tgpong.s / 2;
-		let realPongY = tgpong.y + tgpong.s / 2;
-		let realPlatfX = playerPad.x + playerPad.w / 2;
-		let realPlatfY = playerPad.y + (playerPad.h + playerExtraSize) / 2;
-		if (Math.abs(realPongY - realPlatfY) < (tgpong.s + playerPad.h + playerExtraSize) / 2 && Math.abs(realPongX - realPlatfX) < (tgpong.s + playerPad.w) / 2) {
-			const SIDE_COLLISION_DEEPNESS = playerPad.w / 2 - Math.abs(realPongX / 2 - realPlatfX);
-			const LEVEL_COLLISION_DEEPNESS = (playerPad.h + playerExtraSize) / 2 - Math.abs(realPongY - realPlatfY);
-			if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
-				tgpong.a = playerPad.velocityRotation * 2 - tgpong.a + Math.PI * 2;
-				if (realPongY < realPlatfY) tgpong.y = playerPad.y - playerExtraSize / 2 - tgpong.s;
-				else tgpong.y = playerPad.y + playerPad.h + playerExtraSize;
-			} else {
-				tgpong.a = (playerPad.velocityRotation + Math.PI / 2) * 2 - tgpong.a;
-				tgpong.v += 1 + Math.abs(playerPad.velocityRotation) * 5 + playerPad.superpower.bouncer._bool * 12;
-				if (realPongX < realPlatfX) tgpong.x = playerPad.x - tgpong.s;
-				else tgpong.x = playerPad.x + playerPad.w;
-			}
+			if (mostLeft != Infinity) break;
 		}
 		const botExtraSize = botPad.superpower.larger._bool * botPad.superpower.larger.extraSize;
-		realPlatfX = botPad.x + botPad.w / 2;
-		realPlatfY = botPad.y + (botPad.h + botExtraSize) / 2;
-		if (Math.abs(realPongY - realPlatfY) < (tgpong.s + botPad.h + botExtraSize) / 2 && Math.abs(realPongX - realPlatfX) < (tgpong.s + botPad.w) / 2) {
-			const SIDE_COLLISION_DEEPNESS = botPad.w / 2 - Math.abs(realPongX / 2 - realPlatfX);
-			const LEVEL_COLLISION_DEEPNESS = (botPad.h + botExtraSize) / 2 - Math.abs(realPongY - realPlatfY);
-			if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
-				tgpong.a = -tgpong.a + Math.PI * 2;
-				if (realPongY < realPlatfY) tgpong.y = botPad.y - botExtraSize / 2 - tgpong.s;
-				else tgpong.y = botPad.y + botPad.h + botExtraSize;
-			} else {
-				tgpong.a = Math.PI - tgpong.a;
-				tgpong.v += botPad.superpower.bouncer._bool * 12;
-				if (realPongX < realPlatfX) tgpong.x = botPad.x - tgpong.s;
-				else tgpong.x = botPad.x + botPad.w;
-			}
+		if (!botPad.superpower.freeze._bool) {
+			botPad.velocityY = Math.min(Math.max(((botPad.tgpong.y - botPad.y - (botPad.h + botExtraSize) / 2 + botPad.tgpong.s / 2) / 20 + botPad.velocityY) * 0.8, -200), 200);
+			botPad.y = Math.max(Math.min(botPad.y + botPad.velocityY, canvas.height - botPad.h - botExtraSize - UIS * 1.414), UIS * 1.414);
+			//botPad.y = botPad.tgpong.y;
 		}
-
-		// log into collision table
-		[tgpong.x, tgpong.y] = mapPong(tgpong.x, tgpong.y);
-
-		const ocmi = collisionMap[tgpong.ogy][tgpong.ogx].indexOf(tgpong);
-		collisionMap[tgpong.ogy][tgpong.ogx].splice(ocmi, 1);
-
-		[tgpong.ogx, tgpong.ogy] = [tgpong.gx, tgpong.gy];
-		[tgpong.gx, tgpong.gy] = [Math.floor(tgpong.x / 64) + 1, Math.floor(tgpong.y / 64) + 1];
-
-		collisionMap[tgpong.gy][tgpong.gx].push(tgpong);
-
-		// execute collisions
-		let cannotCollideWith = [];
-		for (let i = -1; i <= 1; i++) {
-			const arrLine = collisionMap[tgpong.gy + i];
-			if (arrLine != undefined) {
-				for (let j = -1; j <= 1; j++) {
-					const collisionCell = arrLine[tgpong.gx + j];
-					if (collisionCell != undefined) {
-						collisionCell.forEach((otherPong) => {
-							if (otherPong != tgpong && !otherPong.motionless._bool && otherPong.pongID > tgpong.pongID && !tgpong.cannotCollideWith.includes(otherPong.pongID)) {
-								if (!((tgpong.pongType._type != 'pong' && otherPong.pongType._type == 'pong') || (tgpong.pongType._type == 'pong' && otherPong.pongType._type != 'pong'))) {
-									if (Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s)) < (otherPong.s + tgpong.s) / 2 && Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s)) < (otherPong.s + tgpong.s) / 2) {
-										const MY_OLD_A = tgpong.a;
-										const MY_OLD_X = tgpong.x;
-										const MY_OLD_Y = tgpong.y;
-
-										const SIDE_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s));
-										const LEVEL_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s));
-
-										if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
-											const a1 = ((MY_OLD_A % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-											const a2 = ((otherPong.a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-											tgpong.a = Math.atan(Math.sin(otherPong.a) / Math.cos(MY_OLD_A)) + (a1 > 0.5 * Math.PI && a1 < 1.5 * Math.PI) * Math.PI;
-											otherPong.a = Math.atan(Math.sin(MY_OLD_A) / Math.cos(otherPong.a)) + (a2 > 0.5 * Math.PI && a2 < 1.5 * Math.PI) * Math.PI;
-
-											if (otherPong.y < tgpong.y) {
-												//otherPong.y = tgpong.y - otherPong.s;
-												otherPong.y -= LEVEL_COLLISION_DEEPNESS / 2 + 1;
-												tgpong.y += LEVEL_COLLISION_DEEPNESS / 2 + 1;
-											} else {
-												//otherPong.y = tgpong.y + tgpong.s;
-												otherPong.y += LEVEL_COLLISION_DEEPNESS / 2 + 1;
-												tgpong.y -= LEVEL_COLLISION_DEEPNESS / 2 + 1;
-											}
-										} else {
-											tgpong.a = Math.atan(Math.sin(MY_OLD_A) / Math.cos(otherPong.a)) + (tgpong.x < otherPong.x) * Math.PI;
-											otherPong.a = Math.atan(Math.sin(otherPong.a) / Math.cos(MY_OLD_A)) + (tgpong.x > otherPong.x) * Math.PI;
-
-											if (otherPong.x + otherPong.s / 2 < tgpong.x + tgpong.s / 2) {
-												//otherPong.x = tgpong.x - otherPong.s;
-												otherPong.x -= SIDE_COLLISION_DEEPNESS / 2 + 1;
-												tgpong.x += SIDE_COLLISION_DEEPNESS / 2 + 1;
-											} else {
-												//otherPong.x = tgpong.x + tgpong.s;
-												otherPong.x += SIDE_COLLISION_DEEPNESS / 2 + 1;
-												tgpong.x -= SIDE_COLLISION_DEEPNESS / 2 + 1;
-											}
-										}
-										//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
-
-										cannotCollideWith.push(otherPong.pongID);
-									}
-								}
-							}
-						});
-					}
-				}
-			}
+		ctxS.fillRect(botPad.x, botPad.y, botPad.w, botPad.h + botExtraSize, 'white');
+		if (botPad.superpower.freeze._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= botPad.superpower.freeze.startTS) botPad.superpower.freeze._bool = false;
+		if (botPad.superpower.larger._bool) {
+			botPad.superpower.larger.extraSize -= 0.1;
+			if (botPad.superpower.larger.extraSize <= 0) botPad.superpower.larger._bool = false;
 		}
-		tgpong.cannotCollideWith = cannotCollideWith;
+		if (botPad.superpower.bouncer._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= botPad.superpower.bouncer.startTS) botPad.superpower.bouncer._bool = false;
+	}
 
-		// if outsite reset pong
-		if (tools.isOutOfBound(tgpong.x, tgpong.y, tgpong.s, tgpong.s, true)) {
-			if (tgpong.pongType._type != 'pong') {
-				if (tgpong.x > canvas.width / 2) {
-					if (tgpong.pongType._type == 'freeze') {
-						botPad.superpower.freeze._bool = true;
-						botPad.superpower.freeze.startTS = Date.now();
+	function pongPhysics() {
+		for (let i = 0; i < pong.length; i++) {
+			let tgpong = pong[i];
 
-						newSuperpowerAnnouncement.bot._bool = true;
-						newSuperpowerAnnouncement.bot.type = 'freeze';
-						newSuperpowerAnnouncement.bot.i = 0;
-					} else if (tgpong.pongType._type == 'larger') {
-						playerPad.superpower.larger._bool = true;
-						playerPad.superpower.larger.extraSize = canvas.height / 6;
-
-						newSuperpowerAnnouncement.player._bool = true;
-						newSuperpowerAnnouncement.player.type = 'larger';
-						newSuperpowerAnnouncement.player.i = 0;
-					} else if (tgpong.pongType._type == 'bouncer') {
-						playerPad.superpower.bouncer._bool = true;
-						playerPad.superpower.bouncer.startTS = Date.now();
-
-						newSuperpowerAnnouncement.player._bool = true;
-						newSuperpowerAnnouncement.player.type = 'bouncer';
-						newSuperpowerAnnouncement.player.i = 0;
-					}
-				} else {
-					if (tgpong.pongType._type == 'freeze') {
-						playerPad.superpower.freeze._bool = true;
-						playerPad.superpower.freeze.startTS = Date.now();
-
-						newSuperpowerAnnouncement.player._bool = true;
-						newSuperpowerAnnouncement.player.type = 'freeze';
-						newSuperpowerAnnouncement.player.i = 0;
-					} else if (tgpong.pongType._type == 'larger') {
-						botPad.superpower.larger._bool = true;
-						botPad.superpower.larger.extraSize = canvas.height / 6;
-
-						newSuperpowerAnnouncement.bot._bool = true;
-						newSuperpowerAnnouncement.bot.type = 'larger';
-						newSuperpowerAnnouncement.bot.i = 0;
-					} else if (tgpong.pongType._type == 'bouncer') {
-						botPad.superpower.bouncer._bool = true;
-						botPad.superpower.bouncer.startTS = Date.now();
-
-						newSuperpowerAnnouncement.bot._bool = true;
-						newSuperpowerAnnouncement.bot.type = 'bouncer';
-						newSuperpowerAnnouncement.bot.i = 0;
-					}
+			// exit if pong does not move
+			if (tgpong.motionless._bool) {
+				const exs = tgpong.motionless.extraSize;
+				if (tgpong.pongType._type == 'pong') ctxS.fillRect(tgpong.x - exs / 2, tgpong.y - exs / 2, tgpong.s + exs, tgpong.s + exs, tgpong.fillStyle + Math.floor(tgpong.motionless.opacity * 16).toString(16));
+				else ctxS.drawImage(tgpong.pongType.src, tgpong.x - exs / 2, tgpong.y - exs / 2, tgpong.s + exs, tgpong.s + exs, tgpong.motionless.opacity);
+				tgpong.motionless.extraSize -= 2;
+				tgpong.motionless.opacity = Math.min(tgpong.motionless.opacity + 0.05, 1);
+				if (tgpong.motionless.extraSize <= 0) {
+					tgpong.motionless._bool = false;
+					tgpong.motionless.extraSize = 0;
+					tgpong.motionless.opacity = 1;
 				}
-				console.log(tgpong.pongType._type);
-				try {
-					// why dafuk this refuses to work until i force it with a while loop
-					while (collisionMap[tgpong.gy][tgpong.gx].indexOf(tgpong) != -1) {
-						const selfIdx = collisionMap[tgpong.gy][tgpong.gx].indexOf(tgpong);
-						delete collisionMap[tgpong.gy][tgpong.gx][selfIdx];
-						collisionMap[tgpong.gy][tgpong.gx].splice(selfIdx, 1);
-					}
-				} catch (error) {
-					console.error(error);
-				}
-				pong.splice(i, 1);
-				specialsCount--;
-
 				continue;
 			}
 
-			if (tgpong.x > canvas.width / 2) {
-				goals.bot.count++;
-				goals.bot.newGoal._bool = true;
-				goals.bot.newGoal.i = 0;
-			} else {
-				goals.player.count++;
-				goals.player.newGoal._bool = true;
-				goals.player.newGoal.i = 0;
+			// draw pong
+			if (tgpong.pongType._type == 'pong') ctxS.fillRect(tgpong.x, tgpong.y, tgpong.s, tgpong.s, tgpong.fillStyle);
+			else ctxS.drawImage(tgpong.pongType.src, tgpong.x, tgpong.y, tgpong.s, tgpong.s);
+
+			// move pong
+			tgpong.x = Math.min(Math.max(tgpong.x + Math.cos(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.width / 64) * 65);
+			tgpong.y = Math.min(Math.max(tgpong.y + Math.sin(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.height / 64) * 65);
+			tgpong.v = Math.min(Math.max((tgpong.v - MIN_PONG_SPEED) / 1.025 + MIN_PONG_SPEED, MIN_PONG_SPEED), 40);
+			[tgpong.x, tgpong.y] = mapPong(tgpong.x, tgpong.y);
+
+			// bounce off wall/wedge/bouncers if applies
+			if (Math.abs(tgpong.y + tgpong.s / 2 - canvas.height / 2) > (canvas.height - tgpong.s) / 2) {
+				tgpong.y = Math.min(Math.max(tgpong.y, 0), canvas.height - tgpong.s);
+				tgpong.a = Math.PI * 2 - tgpong.a;
+			}
+			if (tgpong.y < -tgpong.x + UIS * 1.414) {
+				// top left
+				tgpong.a = Math.PI * 1.5 - tgpong.a;
+				const incrX = -tgpong.y + UIS * 1.414;
+				const incrY = -tgpong.x + UIS * 1.414;
+				tgpong.x += incrX - tgpong.x + 1;
+				tgpong.y += incrY - tgpong.y + 1;
+			} else if (tgpong.y < tgpong.x + tgpong.s - canvas.width + UIS * 1.414) {
+				// top right
+				tgpong.a = Math.PI * 0.5 - tgpong.a;
+				const incrX = tgpong.y - tgpong.s + canvas.width - UIS * 1.414;
+				const incrY = tgpong.x + tgpong.s - canvas.width + UIS * 1.414;
+				tgpong.x += incrX - tgpong.x + 1;
+				tgpong.y += incrY - tgpong.y + 1;
+			} else if (tgpong.y + tgpong.s > tgpong.x + canvas.height - UIS * 1.414) {
+				// bottom left
+				tgpong.a = Math.PI * 0.5 - tgpong.a;
+				const incrX = tgpong.y + tgpong.s - canvas.height + UIS * 1.414;
+				const incrY = tgpong.x - tgpong.s + canvas.height - UIS * 1.414;
+				tgpong.x += incrX - tgpong.x + 1;
+				tgpong.y += incrY - tgpong.y + 1;
+			} else if (tgpong.y + tgpong.s > -tgpong.x - tgpong.s + canvas.width + canvas.height - UIS * 1.414) {
+				// bottom right
+				tgpong.a = Math.PI * 1.5 - tgpong.a;
+				const incrX = -tgpong.y - tgpong.s * 2 + canvas.width + canvas.height - UIS * 1.414;
+				const incrY = -tgpong.x - tgpong.s * 2 + canvas.width + canvas.height - UIS * 1.414;
+				tgpong.x += incrX - tgpong.x + 1;
+				tgpong.y += incrY - tgpong.y + 1;
+			}
+			const a = Math.abs(tgpong.x + tgpong.s / 2 - canvas.width / 2);
+			const b = Math.abs(tgpong.y + tgpong.s / 2 - canvas.height / 2) - canvas.height / 2;
+			const c = Math.sqrt(a * a + b * b);
+			const r = UIS + (tgpong.s * 1.414 + tgpong.s) / 4;
+			if (c < r) {
+				if (tgpong.y + tgpong.s / 2 < canvas.height / 2) {
+					const angleToBouncer = Math.atan2(tgpong.y + tgpong.s / 2, tgpong.x + tgpong.s / 2 - canvas.width / 2);
+					tgpong.a = 2 * (angleToBouncer - Math.PI / 2) - tgpong.a;
+					tgpong.x = Math.cos(angleToBouncer) * (r + 2) + canvas.width / 2 - tgpong.s / 2;
+					tgpong.y = Math.sin(angleToBouncer) * (r + 2) - tgpong.s / 2;
+					bouncersExtraRadius.top += 20;
+				} else {
+					const angleToBouncer = Math.atan2(tgpong.y + tgpong.s / 2 - canvas.height, tgpong.x + tgpong.s / 2 - canvas.width / 2);
+					tgpong.a = 2 * (angleToBouncer - Math.PI / 2) - tgpong.a;
+					tgpong.x = Math.cos(angleToBouncer) * (r + 2) + canvas.width / 2 - tgpong.s / 2;
+					tgpong.y = Math.sin(angleToBouncer) * (r + 2) + canvas.height - tgpong.s / 2;
+					bouncersExtraRadius.bottom += 20;
+				}
+				tgpong.v += 7;
+				if (tgpong.pongType._type == 'pong' && specialsCount < 5) {
+					let img = new Image();
+					switch (Math.floor(Math.random() * 3)) {
+						case 0:
+							img.src = './img/freeze.png';
+							addPong(1, { _type: 'freeze', src: img });
+							break;
+						case 1:
+							img.src = './img/larger.png';
+							addPong(1, { _type: 'larger', src: img });
+							break;
+						case 2:
+							img.src = './img/bouncer.png';
+							addPong(1, { _type: 'bouncer', src: img });
+							break;
+
+						default:
+							console.error('Invalid type of specials');
+							break;
+					}
+				}
 			}
 
-			tgpong.s = Math.random() * 20 + 32;
-			tgpong.x = canvas.width / 2 - tgpong.s / 2;
-			tgpong.y = canvas.height / 2 - tgpong.s / 2;
-			tgpong.a = Math.random() * Math.PI * 2;
-			tgpong.motionless = { _bool: true, extraSize: 40, opacity: 0 };
+			// collision with pad
+			const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
+			let realPongX = tgpong.x + tgpong.s / 2;
+			let realPongY = tgpong.y + tgpong.s / 2;
+			let realPlatfX = playerPad.x + playerPad.w / 2;
+			let realPlatfY = playerPad.y + (playerPad.h + playerExtraSize) / 2;
+			if (Math.abs(realPongY - realPlatfY) < (tgpong.s + playerPad.h + playerExtraSize) / 2 && Math.abs(realPongX - realPlatfX) < (tgpong.s + playerPad.w) / 2) {
+				const SIDE_COLLISION_DEEPNESS = playerPad.w / 2 - Math.abs(realPongX / 2 - realPlatfX);
+				const LEVEL_COLLISION_DEEPNESS = (playerPad.h + playerExtraSize) / 2 - Math.abs(realPongY - realPlatfY);
+				if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
+					tgpong.a = playerPad.velocityRotation * 2 - tgpong.a + Math.PI * 2;
+					if (realPongY < realPlatfY) tgpong.y = playerPad.y - playerExtraSize / 2 - tgpong.s;
+					else tgpong.y = playerPad.y + playerPad.h + playerExtraSize;
+				} else {
+					tgpong.a = (playerPad.velocityRotation + Math.PI / 2) * 2 - tgpong.a;
+					tgpong.v += 1 + Math.abs(playerPad.velocityRotation) * 5 + playerPad.superpower.bouncer._bool * 12;
+					if (realPongX < realPlatfX) tgpong.x = playerPad.x - tgpong.s;
+					else tgpong.x = playerPad.x + playerPad.w;
+				}
+			}
+			const botExtraSize = botPad.superpower.larger._bool * botPad.superpower.larger.extraSize;
+			realPlatfX = botPad.x + botPad.w / 2;
+			realPlatfY = botPad.y + (botPad.h + botExtraSize) / 2;
+			if (Math.abs(realPongY - realPlatfY) < (tgpong.s + botPad.h + botExtraSize) / 2 && Math.abs(realPongX - realPlatfX) < (tgpong.s + botPad.w) / 2) {
+				const SIDE_COLLISION_DEEPNESS = botPad.w / 2 - Math.abs(realPongX / 2 - realPlatfX);
+				const LEVEL_COLLISION_DEEPNESS = (botPad.h + botExtraSize) / 2 - Math.abs(realPongY - realPlatfY);
+				if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
+					tgpong.a = -tgpong.a + Math.PI * 2;
+					if (realPongY < realPlatfY) tgpong.y = botPad.y - botExtraSize / 2 - tgpong.s;
+					else tgpong.y = botPad.y + botPad.h + botExtraSize;
+				} else {
+					tgpong.a = Math.PI - tgpong.a;
+					tgpong.v += botPad.superpower.bouncer._bool * 12;
+					if (realPongX < realPlatfX) tgpong.x = botPad.x - tgpong.s;
+					else tgpong.x = botPad.x + botPad.w;
+				}
+			}
+
+			// log into collision table
+			[tgpong.x, tgpong.y] = mapPong(tgpong.x, tgpong.y);
+
+			const ocmi = collisionMap[tgpong.ogy][tgpong.ogx].indexOf(tgpong);
+			collisionMap[tgpong.ogy][tgpong.ogx].splice(ocmi, 1);
+
+			[tgpong.ogx, tgpong.ogy] = [tgpong.gx, tgpong.gy];
+			[tgpong.gx, tgpong.gy] = [Math.floor(tgpong.x / 64) + 1, Math.floor(tgpong.y / 64) + 1];
+
+			collisionMap[tgpong.gy][tgpong.gx].push(tgpong);
+
+			// execute collisions
+			let cannotCollideWith = [];
+			for (let i = -1; i <= 1; i++) {
+				const arrLine = collisionMap[tgpong.gy + i];
+				if (arrLine != undefined) {
+					for (let j = -1; j <= 1; j++) {
+						const collisionCell = arrLine[tgpong.gx + j];
+						if (collisionCell != undefined) {
+							collisionCell.forEach((otherPong) => {
+								if (otherPong != tgpong && !otherPong.motionless._bool && otherPong.pongID > tgpong.pongID && !tgpong.cannotCollideWith.includes(otherPong.pongID)) {
+									if (!((tgpong.pongType._type != 'pong' && otherPong.pongType._type == 'pong') || (tgpong.pongType._type == 'pong' && otherPong.pongType._type != 'pong'))) {
+										if (Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s)) < (otherPong.s + tgpong.s) / 2 && Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s)) < (otherPong.s + tgpong.s) / 2) {
+											const MY_OLD_A = tgpong.a;
+											const MY_OLD_X = tgpong.x;
+											const MY_OLD_Y = tgpong.y;
+
+											const SIDE_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s));
+											const LEVEL_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s));
+
+											if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
+												const a1 = ((MY_OLD_A % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+												const a2 = ((otherPong.a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+												tgpong.a = Math.atan(Math.sin(otherPong.a) / Math.cos(MY_OLD_A)) + (a1 > 0.5 * Math.PI && a1 < 1.5 * Math.PI) * Math.PI;
+												otherPong.a = Math.atan(Math.sin(MY_OLD_A) / Math.cos(otherPong.a)) + (a2 > 0.5 * Math.PI && a2 < 1.5 * Math.PI) * Math.PI;
+
+												if (otherPong.y < tgpong.y) {
+													//otherPong.y = tgpong.y - otherPong.s;
+													otherPong.y -= LEVEL_COLLISION_DEEPNESS / 2 + 1;
+													tgpong.y += LEVEL_COLLISION_DEEPNESS / 2 + 1;
+												} else {
+													//otherPong.y = tgpong.y + tgpong.s;
+													otherPong.y += LEVEL_COLLISION_DEEPNESS / 2 + 1;
+													tgpong.y -= LEVEL_COLLISION_DEEPNESS / 2 + 1;
+												}
+											} else {
+												tgpong.a = Math.atan(Math.sin(MY_OLD_A) / Math.cos(otherPong.a)) + (tgpong.x < otherPong.x) * Math.PI;
+												otherPong.a = Math.atan(Math.sin(otherPong.a) / Math.cos(MY_OLD_A)) + (tgpong.x > otherPong.x) * Math.PI;
+
+												if (otherPong.x + otherPong.s / 2 < tgpong.x + tgpong.s / 2) {
+													//otherPong.x = tgpong.x - otherPong.s;
+													otherPong.x -= SIDE_COLLISION_DEEPNESS / 2 + 1;
+													tgpong.x += SIDE_COLLISION_DEEPNESS / 2 + 1;
+												} else {
+													//otherPong.x = tgpong.x + tgpong.s;
+													otherPong.x += SIDE_COLLISION_DEEPNESS / 2 + 1;
+													tgpong.x -= SIDE_COLLISION_DEEPNESS / 2 + 1;
+												}
+											}
+											//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
+
+											cannotCollideWith.push(otherPong.pongID);
+										}
+									}
+								}
+							});
+						}
+					}
+				}
+			}
+			tgpong.cannotCollideWith = cannotCollideWith;
+
+			// if outsite reset pong
+			if (tools.isOutOfBound(tgpong.x, tgpong.y, tgpong.s, tgpong.s, true)) {
+				if (tgpong.pongType._type != 'pong') {
+					if (tgpong.x > canvas.width / 2) {
+						if (tgpong.pongType._type == 'freeze') {
+							botPad.superpower.freeze._bool = true;
+							botPad.superpower.freeze.startTS = Date.now();
+
+							newSuperpowerAnnouncement.bot._bool = true;
+							newSuperpowerAnnouncement.bot.type = 'freeze';
+							newSuperpowerAnnouncement.bot.i = 0;
+						} else if (tgpong.pongType._type == 'larger') {
+							playerPad.superpower.larger._bool = true;
+							playerPad.superpower.larger.extraSize = canvas.height / 6;
+
+							newSuperpowerAnnouncement.player._bool = true;
+							newSuperpowerAnnouncement.player.type = 'larger';
+							newSuperpowerAnnouncement.player.i = 0;
+						} else if (tgpong.pongType._type == 'bouncer') {
+							playerPad.superpower.bouncer._bool = true;
+							playerPad.superpower.bouncer.startTS = Date.now();
+
+							newSuperpowerAnnouncement.player._bool = true;
+							newSuperpowerAnnouncement.player.type = 'bouncer';
+							newSuperpowerAnnouncement.player.i = 0;
+						}
+					} else {
+						if (tgpong.pongType._type == 'freeze') {
+							playerPad.superpower.freeze._bool = true;
+							playerPad.superpower.freeze.startTS = Date.now();
+
+							newSuperpowerAnnouncement.player._bool = true;
+							newSuperpowerAnnouncement.player.type = 'freeze';
+							newSuperpowerAnnouncement.player.i = 0;
+						} else if (tgpong.pongType._type == 'larger') {
+							botPad.superpower.larger._bool = true;
+							botPad.superpower.larger.extraSize = canvas.height / 6;
+
+							newSuperpowerAnnouncement.bot._bool = true;
+							newSuperpowerAnnouncement.bot.type = 'larger';
+							newSuperpowerAnnouncement.bot.i = 0;
+						} else if (tgpong.pongType._type == 'bouncer') {
+							botPad.superpower.bouncer._bool = true;
+							botPad.superpower.bouncer.startTS = Date.now();
+
+							newSuperpowerAnnouncement.bot._bool = true;
+							newSuperpowerAnnouncement.bot.type = 'bouncer';
+							newSuperpowerAnnouncement.bot.i = 0;
+						}
+					}
+					console.log(tgpong.pongType._type);
+					try {
+						// why dafuk this refuses to work until i force it with a while loop
+						while (collisionMap[tgpong.gy][tgpong.gx].indexOf(tgpong) != -1) {
+							const selfIdx = collisionMap[tgpong.gy][tgpong.gx].indexOf(tgpong);
+							delete collisionMap[tgpong.gy][tgpong.gx][selfIdx];
+							collisionMap[tgpong.gy][tgpong.gx].splice(selfIdx, 1);
+						}
+					} catch (error) {
+						console.error(error);
+					}
+					pong.splice(i, 1);
+					specialsCount--;
+
+					continue;
+				}
+
+				if (tgpong.x > canvas.width / 2) {
+					goals.bot.count++;
+					goals.bot.newGoal._bool = true;
+					goals.bot.newGoal.i = 0;
+				} else {
+					goals.player.count++;
+					goals.player.newGoal._bool = true;
+					goals.player.newGoal.i = 0;
+				}
+
+				tgpong.s = Math.random() * 20 + 32;
+				tgpong.x = canvas.width / 2 - tgpong.s / 2;
+				tgpong.y = canvas.height / 2 - tgpong.s / 2;
+				tgpong.a = Math.random() * Math.PI * 2;
+				tgpong.v = MIN_PONG_SPEED;
+				tgpong.motionless = { _bool: true, extraSize: 40, opacity: 0 };
+			}
 		}
 	}
-}
 
-function superpowerPopup() {
-	if (newSuperpowerAnnouncement.bot._bool) {
-		const shorthand = newSuperpowerAnnouncement.bot;
-
-		let alpha = '8';
-		if (shorthand.i < 8) alpha = shorthand.i;
-		else if (shorthand.i > 172) alpha = (180 - shorthand.i);
-		ctxS.fillRect(0, 0, canvas.width / 2, canvas.height, newSuperpowerAnnouncement._fillStyle[shorthand.type] + alpha);
-
-		let text = '';
-		if (shorthand.type == 'freeze') text = `You got FROZEN!`;
-		else if (shorthand.type == 'larger') text = `You WIDENED!`;
-		else text = `You became BOUNCY!`;
-		ctxS.fillText(text, '#FFF' + alpha, 36, canvas.width / 4, canvas.height / 2, 'c');
-		if (shorthand.i >= 180) {
-			shorthand._bool = false;
-			shorthand.type = null;
-			shorthand.i = 0;
-		} else shorthand.i++;
+	function mapPong(x, y) {
+		return [Math.min(Math.max(x, -64), Math.ceil(canvas.width / 64) * 65), Math.min(Math.max(y, -64), Math.ceil(canvas.height / 64) * 65)];
 	}
-	if (newSuperpowerAnnouncement.player._bool) {
-		const shorthand = newSuperpowerAnnouncement.player;
-
-		let alpha = '8';
-		if (shorthand.i < 8) alpha = shorthand.i;
-		else if (shorthand.i > 172) alpha = (180 - shorthand.i);
-		ctxS.fillRect(canvas.width / 2, 0, canvas.width / 2, canvas.height, newSuperpowerAnnouncement._fillStyle[shorthand.type] + alpha);
-
-		let text = '';
-		if (shorthand.type == 'freeze') text = `You got FROZEN!`;
-		else if (shorthand.type == 'larger') text = `You WIDENED!`;
-		else text = `You became BOUNCY!`;
-		ctxS.fillText(text, '#FFF' + alpha, 36, canvas.width * 0.75, canvas.height / 2, 'c');
-		if (shorthand.i >= 180) {
-			shorthand._bool = false;
-			shorthand.type = null;
-			shorthand.i = 0;
-		} else shorthand.i++;
-	}
-}
-
-function mapPong(x, y) {
-	return [Math.min(Math.max(x, -64), Math.ceil(canvas.width / 64) * 65), Math.min(Math.max(y, -64), Math.ceil(canvas.height / 64) * 65)];
 }
 
 function addPong(times = 1, pongType = { _type: 'pong' }) {
