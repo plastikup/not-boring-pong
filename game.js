@@ -20,6 +20,13 @@ let specialsCount = 0;
 let gameScore = 0;
 let gameStartTS = undefined;
 
+let colorThemes = {
+	_current: 0,
+	primary: ['#FFF', '#000', '#EBF'],
+	secondary: ['#000', '#FFF', '#46D'],
+	tertiary: ['#FF0', '#282', '#F6E'],
+};
+
 let playerPad = {
 	x: canvas.width - UIS / 2,
 	y: canvas.height - 280,
@@ -270,10 +277,10 @@ document.addEventListener('mousedown', (e) => {
 function menu() {
 	let reqNew = true;
 
-	ctxS.fillRect(0, 0, canvas.width, canvas.height, '#0002');
+	ctxS.fillRect(0, 0, canvas.width, canvas.height, colorThemes.secondary[colorThemes._current] + '2');
 
 	// title
-	ctxS.fillText('NOT BORING PONG', '#FFF', canvas.height / 10 + Math.sin(Date.now() / 500) * 5, canvas.width / 2, canvas.height / 4 - canvas.height / 16, 'c');
+	ctxS.fillText('NOT BORING PONG', colorThemes.primary[colorThemes._current], canvas.height / 10 + Math.sin(Date.now() / 500) * 5, canvas.width / 2, canvas.height / 4 - canvas.height / 16, 'c');
 
 	// sliders
 	let ocx = canvas.width / 2;
@@ -287,6 +294,7 @@ function menu() {
 			if ((coord.y - ocy) % (canvas.height / 9) >= canvas.height / 32 && (coord.y - ocy) % (canvas.height / 9) <= canvas.height / 16) {
 				let j = Math.floor((coord.y - ocy) / (canvas.height / 9));
 				menuSettings[j].value = Math.max(Math.min(menuSettings[j].value + (coord.x < ocx ? -1 : 1), menuSettings[j].max), 1);
+				if (j == 3) colorThemes._current = menuSettings[j].value - 1;
 			}
 		}
 
@@ -294,25 +302,24 @@ function menu() {
 		unreadTouchEvents.splice(i, 1);
 	}
 	for (let i = 0; i < 4; i++) {
-		ctxS.fillText(`${menuSettings[i].description}: ${menuSettings[i].value}${menuSettings[i].key}`, '#FFF7', canvas.height / 36, ocx, ocy, 'c');
+		ctxS.fillText(`${menuSettings[i].description}: ${menuSettings[i].value}${menuSettings[i].key}`, colorThemes.primary[colorThemes._current] + '7', canvas.height / 36, ocx, ocy, 'c');
 
-		ctxS.fillRect(ocx - canvas.width / 8 - canvas.height / 32 - 8, ocy + canvas.height / 32, canvas.height / 32, canvas.height / 32, '#DDD');
-		ctxS.fillRect(ocx + canvas.width / 8 + 8, ocy + canvas.height / 32, canvas.height / 32, canvas.height / 32, '#DDD');
+		ctxS.fillRect(ocx - canvas.width / 8 - canvas.height / 32 - 8, ocy + canvas.height / 32, canvas.height / 32, canvas.height / 32, colorThemes.primary[colorThemes._current]);
+		ctxS.fillRect(ocx + canvas.width / 8 + 8, ocy + canvas.height / 32, canvas.height / 32, canvas.height / 32, colorThemes.primary[colorThemes._current]);
 
-		ctxS.fillText(': - :', '#000', canvas.height / 32, ocx - canvas.width / 8 - canvas.height / 64 - 8, ocy + canvas.height / 32 + canvas.height / 64, 'c');
-		ctxS.fillText('+', '#000', canvas.height / 32, ocx + canvas.width / 8 + canvas.height / 64 + 8, ocy + canvas.height / 32 + canvas.height / 64, 'c');
+		ctxS.fillText(': - :', colorThemes.secondary[colorThemes._current], canvas.height / 32, ocx - canvas.width / 8 - canvas.height / 64 - 8, ocy + canvas.height / 32 + canvas.height / 64, 'c');
+		ctxS.fillText('+', colorThemes.secondary[colorThemes._current], canvas.height / 32, ocx + canvas.width / 8 + canvas.height / 64 + 8, ocy + canvas.height / 32 + canvas.height / 64, 'c');
 
 		const subdivis = menuSettings[i].max;
 		for (let j = 0; j < subdivis; j++) {
-			ctxS.fillRect(ocx - canvas.width / 8 + (canvas.width / 4 / subdivis) * j, ocy + canvas.height / 32, canvas.width / 4 / subdivis - 2, canvas.height / 32, j < menuSettings[i].value ? '#0F0' : '#FFF1');
+			ctxS.fillRect(ocx - canvas.width / 8 + (canvas.width / 4 / subdivis) * j, ocy + canvas.height / 32, canvas.width / 4 / subdivis - 2, canvas.height / 32, j < menuSettings[i].value ? colorThemes.tertiary[colorThemes._current] : colorThemes.primary[colorThemes._current] + '1');
 		}
 
 		ocy += canvas.height / 9;
 	}
 
 	// play button
-	//ctxS.fillRect(canvas.width / 2 - canvas.width / 12, ocy, canvas.width / 6, canvas.height / 16, '#FFF');
-	ctxS.fillText('>> PLAY <<', '#FF0', canvas.height / 20 + Math.sin(Date.now() / -500) * 5, canvas.width / 2, ocy + canvas.height / 30, 'c');
+	ctxS.fillText('>> PLAY <<', colorThemes.tertiary[colorThemes._current], canvas.height / 20 + Math.sin(Date.now() / -500) * 5, canvas.width / 2, ocy + canvas.height / 30, 'c');
 
 	if (reqNew) requestAnimationFrame(menu);
 	else {
