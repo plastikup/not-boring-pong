@@ -30,9 +30,9 @@ let gameStartTS = undefined;
 
 let colorThemes = {
 	_current: menuSettings[3].value - 1,
-	primary: ['#DFF', '#FDF', '#EBF'],
-	secondary: ['#000', '#056', '#46D'],
-	tertiary: ['#FF0', '#282', '#F6E'],
+	primary: ['#DFF', '#FDF', '#FA8'],
+	secondary: ['#000', '#056', '#369'],
+	tertiary: ['#FF0', '#09F', '#DE8'],
 };
 
 let playerPad = {
@@ -185,86 +185,6 @@ let tools = {
 
 /* --- MENU/INTRO --- */
 
-async function intro() {
-	let n = 0;
-	let pixelizedWordArray = [];
-	let PIXEL_SIZE = 0;
-
-	async function animateTitle() {
-		ctxS.clearRect();
-		ctxS.fillText('NOT BORING PONG', `#FFF${n.toString(16)}`, 156 - n * 6, canvas.width / 2, canvas.height / 2, 'c');
-
-		if (n == 16) {
-			console.log('done');
-
-			await tools.sleep(1000);
-
-			ctx.font = `${159 - n * 6}px DotGothic16`;
-			let boundingBox = ctx.measureText('NOT BORING PONG');
-			scanAndPixelize('NOT BORING PONG', canvas.width / 2 - boundingBox.width / 2, canvas.height / 2 + (boundingBox.actualBoundingBoxAscent + boundingBox.actualBoundingBoxDescent) / 2, boundingBox);
-		} else {
-			n++;
-			requestAnimationFrame(animateTitle);
-		}
-	}
-
-	function scanAndPixelize(text, xStart, yStart, boundingBox) {
-		PIXEL_SIZE = (boundingBox.actualBoundingBoxAscent + boundingBox.actualBoundingBoxDescent) / 13;
-		let x = xStart - PIXEL_SIZE / 2 + 6;
-		let y = yStart - PIXEL_SIZE / 2;
-
-		console.log(boundingBox.width / 13);
-
-		for (let i = 0; i < (Math.floor(boundingBox.width / PIXEL_SIZE) - 4) * 2; i++) {
-			for (let j = 0; j < 12; j++) {
-				const data = ctx.getImageData(x, y, 1, 1).data;
-				const rgb = `rgb(${data[0]}, ${data[1]}, ${data[2]})`;
-				if (rgb == 'rgb(255, 255, 255)') pixelizedWordArray.push({ x: x, y: y, a: Math.random() * Math.PI * 2 });
-				y -= PIXEL_SIZE;
-			}
-			x += PIXEL_SIZE / 1.5;
-			y = yStart - PIXEL_SIZE / 2;
-		}
-		console.log(pixelizedWordArray);
-
-		n = 0;
-		pongOutro();
-	}
-
-	async function pongOutro() {
-		ctxS.clearRect();
-		for (let i = 0; i < pixelizedWordArray.length; i++) {
-			if (pixelizedWordArray[i] == undefined) continue;
-
-			let pixelX = pixelizedWordArray[i].x;
-			let pixelY = pixelizedWordArray[i].y;
-			ctx.fillStyle = '#FFF';
-			ctx.fillRect(pixelX, pixelY, PIXEL_SIZE, PIXEL_SIZE);
-
-			if (n * 5 >= i) {
-				let angle = pixelizedWordArray[i].a;
-				pixelizedWordArray[i].a = pixelizedWordArray[i].a - 0.01;
-				pixelizedWordArray[i].x = pixelX + (Math.cos(angle) * Math.max(canvas.width, canvas.height)) / 200;
-				pixelizedWordArray[i].y = pixelY + (Math.sin(angle) * Math.max(canvas.width, canvas.height)) / 200;
-				if (tools.isOutOfBound(pixelX, pixelY, PIXEL_SIZE, PIXEL_SIZE, true)) {
-					delete pixelizedWordArray[i];
-					pixelizedWordArray = pixelizedWordArray.filter((item) => !!item);
-				}
-			}
-		}
-
-		n++;
-		if (pixelizedWordArray.length > 0) requestAnimationFrame(pongOutro);
-		else {
-			ctxS.clearRect();
-			await tools.sleep(1000);
-			menu();
-		}
-	}
-
-	animateTitle();
-}
-
 let unreadTouchEvents = [];
 document.addEventListener('touchstart', (e) => {
 	// mobile client
@@ -278,7 +198,9 @@ document.addEventListener('mousedown', (e) => {
 function menu() {
 	let reqNew = true;
 
-	ctxS.fillRect(0, 0, canvas.width, canvas.height, colorThemes.secondary[colorThemes._current] + '2');
+	menuBgAnimation();
+
+	ctxS.fillRect(0, 0, canvas.width, canvas.height, colorThemes.secondary[colorThemes._current] + '6');
 
 	// title
 	ctxS.fillText('NOT BORING PONG', colorThemes.primary[colorThemes._current], canvas.height / 10 + Math.sin(Date.now() / 500) * 5, canvas.width / 2, canvas.height / 4 - canvas.height / 16, 'c');
@@ -312,7 +234,7 @@ function menu() {
 		ctxS.fillRect(ocx - canvas.width / 8 - canvas.height / 32 - 8, ocy + canvas.height / 32, canvas.height / 32, canvas.height / 32, colorThemes.primary[colorThemes._current]);
 		ctxS.fillRect(ocx + canvas.width / 8 + 8, ocy + canvas.height / 32, canvas.height / 32, canvas.height / 32, colorThemes.primary[colorThemes._current]);
 
-		ctxS.fillText(': - :', colorThemes.secondary[colorThemes._current], canvas.height / 32, ocx - canvas.width / 8 - canvas.height / 64 - 8, ocy + canvas.height / 32 + canvas.height / 64, 'c');
+		ctxS.fillText('  - :', colorThemes.secondary[colorThemes._current], canvas.height / 32, ocx - canvas.width / 8 - canvas.height / 64 - 8, ocy + canvas.height / 32 + canvas.height / 64, 'c');
 		ctxS.fillText('+', colorThemes.secondary[colorThemes._current], canvas.height / 32, ocx + canvas.width / 8 + canvas.height / 64 + 8, ocy + canvas.height / 32 + canvas.height / 64, 'c');
 
 		const subdivis = menuSettings[i].max;
@@ -335,12 +257,30 @@ function menu() {
 	}
 }
 
+let lastRegisteredMousePosition = [canvas.width / 2, canvas.height / 2];
+function menuBgAnimation() {
+	const ox = (Date.now() / 60) % 128;
+	const oy = (Math.sin(Date.now() / 1200) * 32 + Date.now() / 100) % 128;
+	for (let i = 0; i <= Math.ceil(canvas.width / 128); i++) {
+		const x = i * 128 + ox - 64;
+		for (let j = 0; j <= Math.ceil(canvas.height / 128); j++) {
+			const y = j * 128 + oy - 64;
+			const d = Math.sqrt(((lastRegisteredMousePosition[0] - x) ** 2) + ((lastRegisteredMousePosition[1] - y) ** 2));
+			const w = 20 - Math.max(Math.min((d) / 4, 111), 30);
+			const h = 20 - Math.max(Math.min((d) / 4, 111), 30);
+			if (d == NaN) console.log(d);
+			ctxS.fillRect(x - w / 2, y - h / 2, w, h, colorThemes.tertiary[colorThemes._current] + '2', 2 * Math.sin(Date.now() / 600));
+		}
+	}
+}
+
 /* --- GAME --- */
 
-document.addEventListener('mousemove', (e) => onMove(e.offsetY)); // computer client
-document.addEventListener('touchmove', (e) => onMove(e.touches[0].clientY)); // mobile client
+document.addEventListener('mousemove', (e) => onMove(e.offsetX, e.offsetY, true)); // computer client
+document.addEventListener('touchmove', (e) => onMove(undefined, e.touches[0].clientY, false)); // mobile client
 
-function onMove(yTouch) {
+function onMove(xTouch, yTouch, save) {
+	if (save) lastRegisteredMousePosition = [xTouch, yTouch];
 	if (!playerPad.superpower.freeze._bool) {
 		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
 		const NEW_Y = Math.max(Math.min(yTouch - (playerPad.h + playerExtraSize) / 2, canvas.height - playerPad.h - playerExtraSize - UIS * 1.414), UIS * 1.414);
@@ -831,5 +771,4 @@ F.load().then((font) => {
 
 	//game();
 	menu();
-	//intro();
 });
