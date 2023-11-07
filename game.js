@@ -11,6 +11,14 @@ canvas.height = innerHeight - UIS / 4;
 
 /* --- VARIABLES --- */
 
+let menuSettings = [
+	{ description: 'timer', key: 'min', value: 2, max: 4 },
+	{ description: 'bot difficulty', key: '/5', value: 3, max: 5 },
+	{ description: 'active balls (sus)', key: '', value: 4, max: 10 },
+	{ description: 'color theme', key: '', value: Math.round(localStorage.getItem('colorTheme') || 1), max: 3 },
+];
+canvas.className = menuSettings[3].value == 1 ? 'a' : menuSettings[3].value == 2 ? 'b' : 'c';
+
 let MIN_PONG_SPEED = 5;
 let MAX_PONG_COUNT = 5;
 const SUPERPOWER_TS_EFFECTIVE = 3000;
@@ -21,9 +29,9 @@ let gameScore = 0;
 let gameStartTS = undefined;
 
 let colorThemes = {
-	_current: 0,
-	primary: ['#FFF', '#000', '#EBF'],
-	secondary: ['#000', '#FFF', '#46D'],
+	_current: menuSettings[3].value - 1,
+	primary: ['#DFF', '#FDF', '#EBF'],
+	secondary: ['#000', '#056', '#46D'],
 	tertiary: ['#FF0', '#282', '#F6E'],
 };
 
@@ -110,13 +118,6 @@ let bouncersExtraRadius = {
 	bottom: 0,
 };
 
-let menuSettings = [
-	{ description: 'timer', key: 'min', value: 2, max: 4 },
-	{ description: 'bot difficulty', key: '/5', value: 3, max: 5 },
-	{ description: 'active balls (sus)', key: '', value: 4, max: 10 },
-	{ description: 'color theme', key: '', value: 1, max: 3 },
-];
-
 let pong = [];
 let collisionMap = [];
 
@@ -126,7 +127,7 @@ let ctxS = {
 	clearRect: function () {
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 	},
-	fillText: function (text = 'DEFAULT TEXT', fillStyle = '#FFF', fontSize = 36, x = 0, y = 0, alignStyle = 'c') {
+	fillText: function (text = 'DEFAULT TEXT', fillStyle = '#EEE', fontSize = 36, x = 0, y = 0, alignStyle = 'c') {
 		ctx.font = `${fontSize}px DotGothic16`;
 		ctx.fillStyle = fillStyle;
 
@@ -294,7 +295,11 @@ function menu() {
 			if ((coord.y - ocy) % (canvas.height / 9) >= canvas.height / 32 && (coord.y - ocy) % (canvas.height / 9) <= canvas.height / 16) {
 				let j = Math.floor((coord.y - ocy) / (canvas.height / 9));
 				menuSettings[j].value = Math.max(Math.min(menuSettings[j].value + (coord.x < ocx ? -1 : 1), menuSettings[j].max), 1);
-				if (j == 3) colorThemes._current = menuSettings[j].value - 1;
+				if (j == 3) {
+					colorThemes._current = menuSettings[j].value - 1;
+					localStorage.setItem('colorTheme', menuSettings[j].value);
+					canvas.className = menuSettings[j].value == 1 ? 'a' : menuSettings[j].value == 2 ? 'b' : 'c';
+				}
 			}
 		}
 
@@ -325,6 +330,7 @@ function menu() {
 	else {
 		gameStartTS = Date.now() + 999;
 		MAX_PONG_COUNT = menuSettings[2].value;
+		addPong(1);
 		game();
 	}
 }
@@ -345,15 +351,15 @@ function onMove(yTouch) {
 
 function game() {
 	//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
-	ctxS.fillRect(0, 0, canvas.width, canvas.height, '#0008');
+	ctxS.fillRect(0, 0, canvas.width, canvas.height, colorThemes.secondary[colorThemes._current] + '8');
 
 	if (MIN_PONG_SPEED < 9) MIN_PONG_SPEED += 0.0015;
 	if (Math.floor((Date.now() - gameStartTS) / 10000) - (pong.length - specialsCount) > 0 && pong.length - specialsCount < MAX_PONG_COUNT) addPong(1);
 
 	superpowerPopup();
-	drawBoard();
 	drawPads();
 	pongPhysics();
+	drawBoard();
 
 	requestAnimationFrame(game);
 
@@ -402,10 +408,11 @@ function game() {
 		// timer
 		const secondsSince = Math.max(Math.floor((menuSettings[0].value * 60 - (Date.now() - gameStartTS) / 1000) % 60), 0);
 		const minutesSince = Math.max(Math.floor(menuSettings[0].value - (Date.now() - gameStartTS) / 60000), 0);
-		ctxS.fillText(`${minutesSince.toString().padStart(2, '0')}${secondsSince % 2 == 0 ? ':' : ' '}${secondsSince.toString().padStart(2, '0')}`, '#FFD', 36, canvas.width - UIS * 1.414 - 5, 5, 'tr');
+		ctxS.fillText(`${minutesSince.toString().padStart(2, '0')}${secondsSince % 2 == 0 ? ':' : ' '}${secondsSince.toString().padStart(2, '0')}`, colorThemes.primary[colorThemes._current], 36, canvas.width - UIS * 1.414 - 5, 5, 'tr');
+
 		// goals
-		ctxS.fillText(`${goals.bot.count} goal${goals.bot.count > 1 ? 's' : ''}`, '#FFD', 36 + goals.bot.newGoal._bool * Math.sin(goals.bot.newGoal.i++ * (Math.PI / 18)) * 10, canvas.width / 2 - UIS - 5, 5, 'tr');
-		ctxS.fillText(`${goals.player.count} goal${goals.player.count > 1 ? 's' : ''}`, '#FFD', 36 + goals.player.newGoal._bool * Math.sin(goals.player.newGoal.i++ * (Math.PI / 18)) * 10, canvas.width / 2 + UIS + 5, 5, 'tl');
+		ctxS.fillText(`${goals.bot.count} goal${goals.bot.count > 1 ? 's' : ''}`, colorThemes.primary[colorThemes._current], 36 + goals.bot.newGoal._bool * Math.sin(goals.bot.newGoal.i++ * (Math.PI / 18)) * 10, canvas.width / 2 - UIS - 5, 5, 'tr');
+		ctxS.fillText(`${goals.player.count} goal${goals.player.count > 1 ? 's' : ''}`, colorThemes.primary[colorThemes._current], 36 + goals.player.newGoal._bool * Math.sin(goals.player.newGoal.i++ * (Math.PI / 18)) * 10, canvas.width / 2 + UIS + 5, 5, 'tl');
 		if (goals.bot.newGoal._bool && goals.bot.newGoal.i > 18) goals.bot.newGoal._bool = false;
 		if (goals.player.newGoal._bool && goals.player.newGoal.i > 18) goals.player.newGoal._bool = false;
 
@@ -415,16 +422,16 @@ function game() {
 		}
 
 		// top and bottom bouncers
-		ctxS.fillCirc(canvas.width / 2, 0, UIS + bouncersExtraRadius.top, '#FFD');
-		ctxS.fillCirc(canvas.width / 2, canvas.height, UIS + bouncersExtraRadius.bottom, '#FFD');
+		ctxS.fillCirc(canvas.width / 2, 0, UIS + bouncersExtraRadius.top, colorThemes.primary[colorThemes._current]);
+		ctxS.fillCirc(canvas.width / 2, canvas.height, UIS + bouncersExtraRadius.bottom, colorThemes.primary[colorThemes._current]);
 		bouncersExtraRadius.top *= 0.85;
 		bouncersExtraRadius.bottom *= 0.85;
 
 		// corners wedge
-		ctxS.fillRect(-UIS, -UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
-		ctxS.fillRect(canvas.width - UIS, -UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
-		ctxS.fillRect(-UIS, canvas.height - UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
-		ctxS.fillRect(canvas.width - UIS, canvas.height - UIS, 2 * UIS, 2 * UIS, '#FFF', Math.PI / 4);
+		ctxS.fillRect(-UIS, -UIS, 2 * UIS, 2 * UIS, colorThemes.primary[colorThemes._current], Math.PI / 4);
+		ctxS.fillRect(canvas.width - UIS, -UIS, 2 * UIS, 2 * UIS, colorThemes.primary[colorThemes._current], Math.PI / 4);
+		ctxS.fillRect(-UIS, canvas.height - UIS, 2 * UIS, 2 * UIS, colorThemes.primary[colorThemes._current], Math.PI / 4);
+		ctxS.fillRect(canvas.width - UIS, canvas.height - UIS, 2 * UIS, 2 * UIS, colorThemes.primary[colorThemes._current], Math.PI / 4);
 	}
 
 	function drawPads() {
@@ -432,7 +439,7 @@ function game() {
 		playerPad.velocityRotation = Math.min(Math.max(playerPad.velocityRotation / 1.75 + playerPad.velocityY / 100, -Math.PI / 16), Math.PI / 16);
 		playerPad.velocityY = 0;
 		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
-		ctxS.fillRect(playerPad.x, playerPad.y, playerPad.w, playerPad.h + playerExtraSize, 'white', playerPad.velocityRotation);
+		ctxS.fillRect(playerPad.x, playerPad.y, playerPad.w, playerPad.h + playerExtraSize, colorThemes.primary[colorThemes._current], playerPad.velocityRotation);
 		if (playerPad.superpower.freeze._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= playerPad.superpower.freeze.startTS) playerPad.superpower.freeze._bool = false;
 		if (playerPad.superpower.larger._bool) {
 			playerPad.superpower.larger.extraSize -= 0.1;
@@ -460,7 +467,7 @@ function game() {
 			botPad.y = Math.max(Math.min(botPad.y + botPad.velocityY, canvas.height - botPad.h - botExtraSize - UIS * 1.414), UIS * 1.414);
 			//botPad.y = botPad.tgpong.y;
 		}
-		ctxS.fillRect(botPad.x, botPad.y, botPad.w, botPad.h + botExtraSize, 'white');
+		ctxS.fillRect(botPad.x, botPad.y, botPad.w, botPad.h + botExtraSize, colorThemes.primary[colorThemes._current]);
 		if (botPad.superpower.freeze._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= botPad.superpower.freeze.startTS) botPad.superpower.freeze._bool = false;
 		if (botPad.superpower.larger._bool) {
 			botPad.superpower.larger.extraSize -= 0.1;
@@ -796,7 +803,7 @@ function addPong(times = 1, pongType = { _type: 'pong' }) {
 			},
 			pongID: pongIDCount++,
 			pongType: pongType,
-			fillStyle: '#FFF',
+			fillStyle: colorThemes.primary[colorThemes._current],
 			cannotCollideWith: [],
 		});
 		if (pongType._type != 'pong') specialsCount++;
@@ -822,7 +829,6 @@ F.load().then((font) => {
 		}
 	}
 
-	addPong(1);
 	//game();
 	menu();
 	//intro();
