@@ -348,11 +348,6 @@ function game() {
 		const secondsSince = Math.max(Math.floor((menuSettings[0].value * 60 - (Date.now() - gameStartTS) / 1000) % 60), 0);
 		const minutesSince = Math.max(Math.floor(menuSettings[0].value - (Date.now() - gameStartTS) / 60000), 0);
 
-		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
-		const NEW_Y = Math.max(Math.min(playerPad.y + (playerPad.tgy - playerPad.y) / 5, canvas.height - playerPad.h - playerExtraSize - UIS * 1.414), UIS * 1.414);
-		playerPad.velocityY = playerPad.y - NEW_Y;
-		playerPad.y = NEW_Y;
-
 		ctxS.fillText(`${minutesSince.toString().padStart(2, '0')}${secondsSince % 2 == 0 ? ':' : ' '}${secondsSince.toString().padStart(2, '0')}`, colorThemes.primary[colorThemes._current], 36, canvas.width - UIS * 1.414 - 5, 5, 'tr');
 
 		// goals
@@ -381,9 +376,12 @@ function game() {
 
 	function drawPads() {
 		// playerPad
+		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
+		const NEW_Y = Math.max(Math.min(playerPad.y + (playerPad.tgy - playerPad.y) / 5, canvas.height - playerPad.h - playerExtraSize - UIS * 1.414), UIS * 1.414);
+		playerPad.velocityY = playerPad.y - NEW_Y;
+		playerPad.y = NEW_Y;
 		playerPad.velocityRotation = Math.min(Math.max(playerPad.velocityRotation / 1.75 + playerPad.velocityY / 100, -Math.PI / 16), Math.PI / 16);
 		playerPad.velocityY = 0;
-		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
 		ctxS.fillRect(playerPad.x, playerPad.y, playerPad.w, playerPad.h + playerExtraSize, colorThemes.primary[colorThemes._current], playerPad.velocityRotation);
 		if (playerPad.superpower.freeze._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= playerPad.superpower.freeze.startTS) playerPad.superpower.freeze._bool = false;
 		if (playerPad.superpower.larger._bool) {
@@ -399,9 +397,11 @@ function game() {
 			for (let j = 0; j < collisionMap.length; j++) {
 				const cell = collisionMap[j][i];
 				if (cell.length == 0) continue;
-				if (cell[0].x < mostLeft) {
-					botPad.tgpong = cell[0];
-					mostLeft = cell[0].x;
+				for (const targetpong of cell) {
+					if (targetpong.x < mostLeft && targetpong.pongType._type == 'pong') {
+						botPad.tgpong = targetpong;
+						mostLeft = targetpong.x;
+					}
 				}
 			}
 			if (mostLeft != Infinity) break;
