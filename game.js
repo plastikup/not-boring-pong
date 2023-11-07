@@ -18,7 +18,7 @@ let pongIDCount = 0;
 let specialsCount = 0;
 
 let gameScore = 0;
-let gameStartTS = Date.now();
+let gameStartTS = undefined;
 
 let playerPad = {
 	x: canvas.width - UIS / 2,
@@ -315,7 +315,11 @@ function menu() {
 	ctxS.fillText('>> PLAY <<', '#FF0', canvas.height / 20 + Math.sin(Date.now() / -500) * 5, canvas.width / 2, ocy + canvas.height / 30, 'c');
 
 	if (reqNew) requestAnimationFrame(menu);
-	else game();
+	else {
+		gameStartTS = Date.now() + 999;
+		MAX_PONG_COUNT = menuSettings[2].value;
+		game();
+	}
 }
 
 /* --- GAME --- */
@@ -389,8 +393,8 @@ function game() {
 
 	function drawBoard() {
 		// timer
-		const secondsSince = Math.max(Math.floor((120 - (Date.now() - gameStartTS) / 1000) % 60), 0);
-		const minutesSince = Math.max(Math.floor(2 - (Date.now() - gameStartTS) / 60000), 0);
+		const secondsSince = Math.max(Math.floor((menuSettings[0].value * 60 - (Date.now() - gameStartTS) / 1000) % 60), 0);
+		const minutesSince = Math.max(Math.floor(menuSettings[0].value - (Date.now() - gameStartTS) / 60000), 0);
 		ctxS.fillText(`${minutesSince.toString().padStart(2, '0')}${secondsSince % 2 == 0 ? ':' : ' '}${secondsSince.toString().padStart(2, '0')}`, '#FFD', 36, canvas.width - UIS * 1.414 - 5, 5, 'tr');
 		// goals
 		ctxS.fillText(`${goals.bot.count} goal${goals.bot.count > 1 ? 's' : ''}`, '#FFD', 36 + goals.bot.newGoal._bool * Math.sin(goals.bot.newGoal.i++ * (Math.PI / 18)) * 10, canvas.width / 2 - UIS - 5, 5, 'tr');
@@ -427,7 +431,7 @@ function game() {
 			playerPad.superpower.larger.extraSize -= 0.1;
 			if (playerPad.superpower.larger.extraSize <= 0) playerPad.superpower.larger._bool = false;
 		}
-		if (playerPad.superpower.bouncer._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= playerPad.superpower.bouncer.startTS) playerPad.superpower.bouncer._bool = false;
+		if (playerPad.superpower.bouncer._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE * 1.5 >= playerPad.superpower.bouncer.startTS) playerPad.superpower.bouncer._bool = false;
 
 		// botPad
 		if (botPad.tgpong == undefined) botPad.tgpong = pong[0];
@@ -455,7 +459,7 @@ function game() {
 			botPad.superpower.larger.extraSize -= 0.1;
 			if (botPad.superpower.larger.extraSize <= 0) botPad.superpower.larger._bool = false;
 		}
-		if (botPad.superpower.bouncer._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= botPad.superpower.bouncer.startTS) botPad.superpower.bouncer._bool = false;
+		if (botPad.superpower.bouncer._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE * 1.5 >= botPad.superpower.bouncer.startTS) botPad.superpower.bouncer._bool = false;
 	}
 
 	function pongPhysics() {
@@ -686,7 +690,7 @@ function game() {
 							newSuperpowerAnnouncement.bot.i = 0;
 						} else if (tgpong.pongType._type == 'larger') {
 							playerPad.superpower.larger._bool = true;
-							playerPad.superpower.larger.extraSize = canvas.height / 6;
+							playerPad.superpower.larger.extraSize = canvas.height / 8;
 
 							newSuperpowerAnnouncement.player._bool = true;
 							newSuperpowerAnnouncement.player.type = 'larger';
@@ -709,7 +713,7 @@ function game() {
 							newSuperpowerAnnouncement.player.i = 0;
 						} else if (tgpong.pongType._type == 'larger') {
 							botPad.superpower.larger._bool = true;
-							botPad.superpower.larger.extraSize = canvas.height / 6;
+							botPad.superpower.larger.extraSize = canvas.height / 8;
 
 							newSuperpowerAnnouncement.bot._bool = true;
 							newSuperpowerAnnouncement.bot.type = 'larger';
