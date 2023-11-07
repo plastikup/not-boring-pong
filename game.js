@@ -257,27 +257,53 @@ async function intro() {
 	animateTitle();
 }
 
+let unreadTouchEvents = [];
+document.addEventListener('touchstart', (e) => {
+	// mobile client
+	unreadTouchEvents.push({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+});
+document.addEventListener('mousedown', (e) => {
+	// computer client
+	unreadTouchEvents.push({ x: e.offsetX, y: e.offsetY });
+});
+
 function menu() {
-	ctxS.fillRect(0, 0, canvas.width, canvas.height, '#0008');
+	ctxS.fillRect(0, 0, canvas.width, canvas.height, '#0002');
 
 	// title
-	ctxS.fillText('NOT BORING PONG', '#FFF', canvas.height / 10 + Math.sin(Date.now() / 500) * 5, canvas.width / 2, canvas.height / 4, 'c');
+	ctxS.fillText('NOT BORING PONG', '#FFF', canvas.height / 10 + Math.sin(Date.now() / 500) * 5, canvas.width / 2, canvas.height / 4 - canvas.height / 16, 'c');
 
 	// sliders
 	let ocx = canvas.width / 2;
-	let ocy = canvas.height / 2 - canvas.height / 7;
+	let ocy = canvas.height / 2 - canvas.height / 5;
+	for (let i = unreadTouchEvents.length - 1; i >= 0; i--) {
+		const coord = unreadTouchEvents[i];
+
+		if (Math.abs(ocx - coord.x) >= canvas.width / 8 + 8 && Math.abs(ocx - coord.x) <= canvas.width / 8 + canvas.height / 32 + 8) {
+			if ((coord.y - ocy) % (canvas.height / 9) >= canvas.height / 32 && (coord.y - ocy) % (canvas.height / 9) <= canvas.height / 16) {
+				let j = Math.floor((coord.y - ocy) / (canvas.height / 9));
+				menuSettings[j].value = Math.max(Math.min(menuSettings[j].value + (coord.x < ocx ? -1 : 1), menuSettings[j].max), 1);
+			}
+		}
+
+		console.log(coord.x, coord.y);
+		unreadTouchEvents.splice(i, 1);
+	}
 	for (let i = 0; i < 4; i++) {
-		ctxS.fillText(`${menuSettings[i].description}: ${menuSettings[i].value}${menuSettings[i].key}`, '#FFF', canvas.height / 30, ocx, ocy, 'c');
+		ctxS.fillText(`${menuSettings[i].description}: ${menuSettings[i].value}${menuSettings[i].key}`, '#FFF7', canvas.height / 36, ocx, ocy, 'c');
+
 		ctxS.fillRect(ocx - canvas.width / 8 - canvas.height / 32 - 8, ocy + canvas.height / 32, canvas.height / 32, canvas.height / 32, '#DDD');
 		ctxS.fillRect(ocx + canvas.width / 8 + 8, ocy + canvas.height / 32, canvas.height / 32, canvas.height / 32, '#DDD');
-		/*
-		ctxS.fillText('-', '#000', canvas.height / 32, ocx - canvas.width / 8 - canvas.height / 64 - 8, ocy + canvas.height / 32 + canvas.height / 64, 'c');
+
+		ctxS.fillText(': - :', '#000', canvas.height / 32, ocx - canvas.width / 8 - canvas.height / 64 - 8, ocy + canvas.height / 32 + canvas.height / 64, 'c');
 		ctxS.fillText('+', '#000', canvas.height / 32, ocx + canvas.width / 8 + canvas.height / 64 + 8, ocy + canvas.height / 32 + canvas.height / 64, 'c');
-		*/
 
-		ctxS.fillRect(ocx - canvas.width / 8, ocy + canvas.height / 32, canvas.width / 4, canvas.height / 32, '#FFF');
+		const subdivis = menuSettings[i].max;
+		for (let j = 0; j < subdivis; j++) {
+			ctxS.fillRect(ocx - canvas.width / 8 + (canvas.width / 4 / subdivis) * j, ocy + canvas.height / 32, canvas.width / 4 / subdivis - 2, canvas.height / 32, j < menuSettings[i].value ? '#0F0' : '#FFF1');
+		}
 
-		ocy += canvas.height / 8;
+		ocy += canvas.height / 9;
 	}
 
 	requestAnimationFrame(menu);
@@ -779,4 +805,5 @@ F.load().then((font) => {
 	addPong(1);
 	//game();
 	menu();
+	//intro();
 });
