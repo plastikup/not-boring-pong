@@ -13,7 +13,7 @@ canvas.height = innerHeight - UIS / 4;
 
 let MIN_PONG_SPEED = 5;
 let MAX_PONG_COUNT = 5;
-const SUPERPOWER_TS_EFFECTIVE = 5000;
+const SUPERPOWER_TS_EFFECTIVE = 3000;
 let pongIDCount = 0;
 let specialsCount = 0;
 
@@ -106,7 +106,7 @@ let bouncersExtraRadius = {
 let menuSettings = [
 	{ description: 'timer', key: 'min', value: 2, max: 4 },
 	{ description: 'bot difficulty', key: '/5', value: 3, max: 5 },
-	{ description: 'active balls (sus)', key: '', value: 5, max: 10 },
+	{ description: 'active balls (sus)', key: '', value: 4, max: 10 },
 	{ description: 'color theme', key: '', value: 1, max: 3 },
 ];
 
@@ -449,7 +449,7 @@ function game() {
 		}
 		const botExtraSize = botPad.superpower.larger._bool * botPad.superpower.larger.extraSize;
 		if (!botPad.superpower.freeze._bool) {
-			botPad.velocityY = Math.min(Math.max(((botPad.tgpong.y - botPad.y - (botPad.h + botExtraSize) / 2 + botPad.tgpong.s / 2) / 20 + botPad.velocityY) * 0.8, -200), 200);
+			botPad.velocityY = Math.min(Math.max(((botPad.tgpong.y - botPad.y - (botPad.h + botExtraSize) / 2 + botPad.tgpong.s / 2) / (45 - menuSettings[1].value) + botPad.velocityY) * (0.7 + menuSettings[1].value / 50), -20 - menuSettings[1].value * 2), 20 + menuSettings[1].value * 2);
 			botPad.y = Math.max(Math.min(botPad.y + botPad.velocityY, canvas.height - botPad.h - botExtraSize - UIS * 1.414), UIS * 1.414);
 			//botPad.y = botPad.tgpong.y;
 		}
