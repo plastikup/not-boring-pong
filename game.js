@@ -38,6 +38,7 @@ let colorThemes = {
 let playerPad = {
 	x: canvas.width - UIS / 2,
 	y: canvas.height - 280,
+	tgy: canvas.height - 280,
 	w: UIS / 4,
 	h: canvas.height / 8,
 	velocityRotation: 0,
@@ -195,8 +196,25 @@ document.addEventListener('mousedown', (e) => {
 	unreadTouchEvents.push({ x: e.offsetX, y: e.offsetY });
 });
 
+let lastRegisteredMousePosition = [canvas.width / 2, canvas.height / 2];
 function menu() {
 	let reqNew = true;
+
+	function menuBgAnimation() {
+		const ox = (Date.now() / 60) % 128;
+		const oy = (Math.sin(Date.now() / 1200) * 32 + Date.now() / 100) % 128;
+		for (let i = 0; i <= Math.ceil(canvas.width / 128); i++) {
+			const x = i * 128 + ox - 64;
+			for (let j = 0; j <= Math.ceil(canvas.height / 128); j++) {
+				const y = j * 128 + oy - 64;
+				const d = Math.sqrt(((lastRegisteredMousePosition[0] - x) ** 2) + ((lastRegisteredMousePosition[1] - y) ** 2));
+				const w = 20 - Math.max(Math.min((d) / 4, 111), 30);
+				const h = 20 - Math.max(Math.min((d) / 4, 111), 30);
+				if (d == NaN) console.log(d);
+				ctxS.fillRect(x - w / 2, y - h / 2, w, h, colorThemes.tertiary[colorThemes._current] + '2', 2 * Math.sin(Date.now() / 600));
+			}
+		}
+	}
 
 	menuBgAnimation();
 
@@ -257,23 +275,6 @@ function menu() {
 	}
 }
 
-let lastRegisteredMousePosition = [canvas.width / 2, canvas.height / 2];
-function menuBgAnimation() {
-	const ox = (Date.now() / 60) % 128;
-	const oy = (Math.sin(Date.now() / 1200) * 32 + Date.now() / 100) % 128;
-	for (let i = 0; i <= Math.ceil(canvas.width / 128); i++) {
-		const x = i * 128 + ox - 64;
-		for (let j = 0; j <= Math.ceil(canvas.height / 128); j++) {
-			const y = j * 128 + oy - 64;
-			const d = Math.sqrt(((lastRegisteredMousePosition[0] - x) ** 2) + ((lastRegisteredMousePosition[1] - y) ** 2));
-			const w = 20 - Math.max(Math.min((d) / 4, 111), 30);
-			const h = 20 - Math.max(Math.min((d) / 4, 111), 30);
-			if (d == NaN) console.log(d);
-			ctxS.fillRect(x - w / 2, y - h / 2, w, h, colorThemes.tertiary[colorThemes._current] + '2', 2 * Math.sin(Date.now() / 600));
-		}
-	}
-}
-
 /* --- GAME --- */
 
 document.addEventListener('mousemove', (e) => onMove(e.offsetX, e.offsetY, true)); // computer client
@@ -283,9 +284,7 @@ function onMove(xTouch, yTouch, save) {
 	if (save) lastRegisteredMousePosition = [xTouch, yTouch];
 	if (!playerPad.superpower.freeze._bool) {
 		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
-		const NEW_Y = Math.max(Math.min(yTouch - (playerPad.h + playerExtraSize) / 2, canvas.height - playerPad.h - playerExtraSize - UIS * 1.414), UIS * 1.414);
-		playerPad.velocityY = playerPad.y - NEW_Y;
-		playerPad.y = NEW_Y;
+		playerPad.tgy = yTouch - (playerPad.h + playerExtraSize) / 2;
 	}
 }
 
@@ -348,6 +347,12 @@ function game() {
 		// timer
 		const secondsSince = Math.max(Math.floor((menuSettings[0].value * 60 - (Date.now() - gameStartTS) / 1000) % 60), 0);
 		const minutesSince = Math.max(Math.floor(menuSettings[0].value - (Date.now() - gameStartTS) / 60000), 0);
+
+		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
+		const NEW_Y = Math.max(Math.min(playerPad.y + (playerPad.tgy - playerPad.y) / 4, canvas.height - playerPad.h - playerExtraSize - UIS * 1.414), UIS * 1.414);
+		playerPad.velocityY = playerPad.y - NEW_Y;
+		playerPad.y = NEW_Y;
+
 		ctxS.fillText(`${minutesSince.toString().padStart(2, '0')}${secondsSince % 2 == 0 ? ':' : ' '}${secondsSince.toString().padStart(2, '0')}`, colorThemes.primary[colorThemes._current], 36, canvas.width - UIS * 1.414 - 5, 5, 'tr');
 
 		// goals
