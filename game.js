@@ -349,7 +349,7 @@ function game() {
 		const minutesSince = Math.max(Math.floor(menuSettings[0].value - (Date.now() - gameStartTS) / 60000), 0);
 
 		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
-		const NEW_Y = Math.max(Math.min(playerPad.y + (playerPad.tgy - playerPad.y) / 4, canvas.height - playerPad.h - playerExtraSize - UIS * 1.414), UIS * 1.414);
+		const NEW_Y = Math.max(Math.min(playerPad.y + (playerPad.tgy - playerPad.y) / 5, canvas.height - playerPad.h - playerExtraSize - UIS * 1.414), UIS * 1.414);
 		playerPad.velocityY = playerPad.y - NEW_Y;
 		playerPad.y = NEW_Y;
 
