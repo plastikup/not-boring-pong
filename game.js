@@ -268,6 +268,8 @@ document.addEventListener('mousedown', (e) => {
 });
 
 function menu() {
+	let reqNew = true;
+
 	ctxS.fillRect(0, 0, canvas.width, canvas.height, '#0002');
 
 	// title
@@ -279,7 +281,9 @@ function menu() {
 	for (let i = unreadTouchEvents.length - 1; i >= 0; i--) {
 		const coord = unreadTouchEvents[i];
 
-		if (Math.abs(ocx - coord.x) >= canvas.width / 8 + 8 && Math.abs(ocx - coord.x) <= canvas.width / 8 + canvas.height / 32 + 8) {
+		if (Math.abs(canvas.width / 2 - coord.x) <= canvas.width / 10 && Math.abs(ocy + (canvas.height / 9) * 4 + canvas.height / 30 - coord.y) <= canvas.height / 40) {
+			reqNew = false;
+		} else if (Math.abs(ocx - coord.x) >= canvas.width / 8 + 8 && Math.abs(ocx - coord.x) <= canvas.width / 8 + canvas.height / 32 + 8) {
 			if ((coord.y - ocy) % (canvas.height / 9) >= canvas.height / 32 && (coord.y - ocy) % (canvas.height / 9) <= canvas.height / 16) {
 				let j = Math.floor((coord.y - ocy) / (canvas.height / 9));
 				menuSettings[j].value = Math.max(Math.min(menuSettings[j].value + (coord.x < ocx ? -1 : 1), menuSettings[j].max), 1);
@@ -306,7 +310,12 @@ function menu() {
 		ocy += canvas.height / 9;
 	}
 
-	requestAnimationFrame(menu);
+	// play button
+	//ctxS.fillRect(canvas.width / 2 - canvas.width / 12, ocy, canvas.width / 6, canvas.height / 16, '#FFF');
+	ctxS.fillText('>> PLAY <<', '#FF0', canvas.height / 20 + Math.sin(Date.now() / -500) * 5, canvas.width / 2, ocy + canvas.height / 30, 'c');
+
+	if (reqNew) requestAnimationFrame(menu);
+	else game();
 }
 
 /* --- GAME --- */
