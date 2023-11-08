@@ -289,6 +289,7 @@ function onMove(xTouch, yTouch, save) {
 		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
 		playerPad.tgy = yTouch - (playerPad.h + playerExtraSize) / 2;
 	}
+	//console.log(Math.atan2(canvas.height / 2 - yTouch, canvas.width / 2 - xTouch) / (Math.PI/180))
 }
 
 function game() {
@@ -453,14 +454,38 @@ function game() {
 			if (tgpong.pongType._type == 'pong') ctxS.fillRect(tgpong.x, tgpong.y, tgpong.s, tgpong.s, tgpong.fillStyle);
 			else ctxS.drawImage(tgpong.pongType.src, tgpong.x, tgpong.y, tgpong.s, tgpong.s);
 
-			// exit if game has ended
-			if (GAME_ENDED) continue;
-
 			// move pong
-			tgpong.x = Math.min(Math.max(tgpong.x + Math.cos(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.width / 64) * 65);
-			tgpong.y = Math.min(Math.max(tgpong.y + Math.sin(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.height / 64) * 65);
+			tgpong.x = tgpong.x + Math.cos(tgpong.a) * tgpong.v;
+			tgpong.y = tgpong.y + Math.sin(tgpong.a) * tgpong.v;
 			tgpong.v = Math.min(Math.max((tgpong.v - MIN_PONG_SPEED) / 1.025 + MIN_PONG_SPEED, MIN_PONG_SPEED), 40);
+
+			// log into collision table
 			[tgpong.x, tgpong.y] = mapPong(tgpong.x, tgpong.y);
+
+			const ocmi = collisionMap[tgpong.ogy][tgpong.ogx].indexOf(tgpong);
+			collisionMap[tgpong.ogy][tgpong.ogx].splice(ocmi, 1);
+
+			[tgpong.ogx, tgpong.ogy] = [tgpong.gx, tgpong.gy];
+			[tgpong.gx, tgpong.gy] = [Math.floor(tgpong.x / 64) + 1, Math.floor(tgpong.y / 64) + 1];
+
+			collisionMap[tgpong.gy][tgpong.gx].push(tgpong);
+
+			// execute collisions
+			tgpong = executeCollisions(tgpong);
+
+			// exit if game has ended
+			if (GAME_ENDED) {
+				tgpong.v = 0;
+				const angleToCenter = Math.atan2(canvas.height / 2 - tgpong.y - tgpong.s / 2, canvas.width / 2 - tgpong.x - tgpong.s / 2);
+				const xDiff = Math.cos(angleToCenter) * 0.1;
+				const yDiff = Math.sin(angleToCenter) * 0.1;
+				tgpong.grav.vx += xDiff;
+				tgpong.grav.vy += yDiff;
+				tgpong.x += tgpong.grav.vx;
+				tgpong.y += tgpong.grav.vy;
+
+				continue;
+			}
 
 			// bounce off wall/wedge/bouncers if applies
 			if (Math.abs(tgpong.y + tgpong.s / 2 - canvas.height / 2) > (canvas.height - tgpong.s) / 2) {
@@ -576,78 +601,6 @@ function game() {
 				}
 			}
 
-			// log into collision table
-			[tgpong.x, tgpong.y] = mapPong(tgpong.x, tgpong.y);
-
-			const ocmi = collisionMap[tgpong.ogy][tgpong.ogx].indexOf(tgpong);
-			collisionMap[tgpong.ogy][tgpong.ogx].splice(ocmi, 1);
-
-			[tgpong.ogx, tgpong.ogy] = [tgpong.gx, tgpong.gy];
-			[tgpong.gx, tgpong.gy] = [Math.floor(tgpong.x / 64) + 1, Math.floor(tgpong.y / 64) + 1];
-
-			collisionMap[tgpong.gy][tgpong.gx].push(tgpong);
-
-			// execute collisions
-			let cannotCollideWith = [];
-			for (let i = -1; i <= 1; i++) {
-				const arrLine = collisionMap[tgpong.gy + i];
-				if (arrLine != undefined) {
-					for (let j = -1; j <= 1; j++) {
-						const collisionCell = arrLine[tgpong.gx + j];
-						if (collisionCell != undefined) {
-							collisionCell.forEach((otherPong) => {
-								if (otherPong != tgpong && !otherPong.motionless._bool && otherPong.pongID > tgpong.pongID && !tgpong.cannotCollideWith.includes(otherPong.pongID)) {
-									if (!((tgpong.pongType._type != 'pong' && otherPong.pongType._type == 'pong') || (tgpong.pongType._type == 'pong' && otherPong.pongType._type != 'pong'))) {
-										if (Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s)) < (otherPong.s + tgpong.s) / 2 && Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s)) < (otherPong.s + tgpong.s) / 2) {
-											const MY_OLD_A = tgpong.a;
-											const MY_OLD_X = tgpong.x;
-											const MY_OLD_Y = tgpong.y;
-
-											const SIDE_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s));
-											const LEVEL_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s));
-
-											if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
-												const a1 = ((MY_OLD_A % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-												const a2 = ((otherPong.a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-												tgpong.a = Math.atan(Math.sin(otherPong.a) / Math.cos(MY_OLD_A)) + (a1 > 0.5 * Math.PI && a1 < 1.5 * Math.PI) * Math.PI;
-												otherPong.a = Math.atan(Math.sin(MY_OLD_A) / Math.cos(otherPong.a)) + (a2 > 0.5 * Math.PI && a2 < 1.5 * Math.PI) * Math.PI;
-
-												if (otherPong.y < tgpong.y) {
-													//otherPong.y = tgpong.y - otherPong.s;
-													otherPong.y -= LEVEL_COLLISION_DEEPNESS / 2 + 1;
-													tgpong.y += LEVEL_COLLISION_DEEPNESS / 2 + 1;
-												} else {
-													//otherPong.y = tgpong.y + tgpong.s;
-													otherPong.y += LEVEL_COLLISION_DEEPNESS / 2 + 1;
-													tgpong.y -= LEVEL_COLLISION_DEEPNESS / 2 + 1;
-												}
-											} else {
-												tgpong.a = Math.atan(Math.sin(MY_OLD_A) / Math.cos(otherPong.a)) + (tgpong.x < otherPong.x) * Math.PI;
-												otherPong.a = Math.atan(Math.sin(otherPong.a) / Math.cos(MY_OLD_A)) + (tgpong.x > otherPong.x) * Math.PI;
-
-												if (otherPong.x + otherPong.s / 2 < tgpong.x + tgpong.s / 2) {
-													//otherPong.x = tgpong.x - otherPong.s;
-													otherPong.x -= SIDE_COLLISION_DEEPNESS / 2 + 1;
-													tgpong.x += SIDE_COLLISION_DEEPNESS / 2 + 1;
-												} else {
-													//otherPong.x = tgpong.x + tgpong.s;
-													otherPong.x += SIDE_COLLISION_DEEPNESS / 2 + 1;
-													tgpong.x -= SIDE_COLLISION_DEEPNESS / 2 + 1;
-												}
-											}
-											//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
-
-											cannotCollideWith.push(otherPong.pongID);
-										}
-									}
-								}
-							});
-						}
-					}
-				}
-			}
-			tgpong.cannotCollideWith = cannotCollideWith;
-
 			// if outsite reset pong
 			if (tools.isOutOfBound(tgpong.x, tgpong.y, tgpong.s, tgpong.s, true)) {
 				if (tgpong.pongType._type != 'pong') {
@@ -735,6 +688,71 @@ function game() {
 		}
 	}
 
+	function executeCollisions(tgpong, cannotCollideWith = []) {
+		for (let i = -1; i <= 1; i++) {
+			const arrLine = collisionMap[tgpong.gy + i];
+			if (arrLine != undefined) {
+				for (let j = -1; j <= 1; j++) {
+					const collisionCell = arrLine[tgpong.gx + j];
+					if (collisionCell != undefined) {
+						collisionCell.forEach((otherPong) => {
+							if (otherPong != tgpong && !otherPong.motionless._bool && otherPong.pongID > tgpong.pongID && !tgpong.cannotCollideWith.includes(otherPong.pongID)) {
+								if (!((tgpong.pongType._type != 'pong' && otherPong.pongType._type == 'pong') || (tgpong.pongType._type == 'pong' && otherPong.pongType._type != 'pong'))) {
+									if (Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s)) < (otherPong.s + tgpong.s) / 2 && Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s)) < (otherPong.s + tgpong.s) / 2) {
+										const MY_OLD_A = tgpong.a;
+										const MY_OLD_X = tgpong.x;
+										const MY_OLD_Y = tgpong.y;
+
+										const SIDE_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s));
+										const LEVEL_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s));
+										console.log(tgpong.pongID);
+
+										if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
+											const a1 = ((MY_OLD_A % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+											const a2 = ((otherPong.a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+											tgpong.a = Math.atan(Math.sin(otherPong.a) / Math.cos(MY_OLD_A)) + (a1 > 0.5 * Math.PI && a1 < 1.5 * Math.PI) * Math.PI;
+											otherPong.a = Math.atan(Math.sin(MY_OLD_A) / Math.cos(otherPong.a)) + (a2 > 0.5 * Math.PI && a2 < 1.5 * Math.PI) * Math.PI;
+											[tgpong.grav.vy, otherPong.grav.vy] = [otherPong.grav.vy, tgpong.grav.vy];
+
+											if (otherPong.y < tgpong.y) {
+												//otherPong.y = tgpong.y - otherPong.s;
+												otherPong.y -= LEVEL_COLLISION_DEEPNESS / 2 + 1;
+												tgpong.y += LEVEL_COLLISION_DEEPNESS / 2 + 1;
+											} else {
+												//otherPong.y = tgpong.y + tgpong.s;
+												otherPong.y += LEVEL_COLLISION_DEEPNESS / 2 + 1;
+												tgpong.y -= LEVEL_COLLISION_DEEPNESS / 2 + 1;
+											}
+										} else {
+											tgpong.a = Math.atan(Math.sin(MY_OLD_A) / Math.cos(otherPong.a)) + (tgpong.x < otherPong.x) * Math.PI;
+											otherPong.a = Math.atan(Math.sin(otherPong.a) / Math.cos(MY_OLD_A)) + (tgpong.x > otherPong.x) * Math.PI;
+											[tgpong.grav.vx, otherPong.grav.vx] = [otherPong.grav.vx, tgpong.grav.vx];
+
+											if (otherPong.x + otherPong.s / 2 < tgpong.x + tgpong.s / 2) {
+												//otherPong.x = tgpong.x - otherPong.s;
+												otherPong.x -= SIDE_COLLISION_DEEPNESS / 2 + 1;
+												tgpong.x += SIDE_COLLISION_DEEPNESS / 2 + 1;
+											} else {
+												//otherPong.x = tgpong.x + tgpong.s;
+												otherPong.x += SIDE_COLLISION_DEEPNESS / 2 + 1;
+												tgpong.x -= SIDE_COLLISION_DEEPNESS / 2 + 1;
+											}
+										}
+										//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
+
+										cannotCollideWith.push(otherPong.pongID);
+									}
+								}
+							}
+						});
+					}
+				}
+			}
+		}
+		tgpong.cannotCollideWith = cannotCollideWith;
+		return tgpong;
+	}
+
 	function mapPong(x, y) {
 		return [Math.min(Math.max(x, -64), Math.ceil(canvas.width / 64) * 65), Math.min(Math.max(y, -64), Math.ceil(canvas.height / 64) * 65)];
 	}
@@ -775,6 +793,10 @@ function addPong(times = 1, pongType = { _type: 'pong' }) {
 			pongType: pongType,
 			fillStyle: colorThemes.primary[colorThemes._current],
 			cannotCollideWith: [],
+			grav: {
+				vx: 0,
+				vy: 0,
+			},
 		});
 		if (pongType._type != 'pong') specialsCount++;
 		collisionMap[pong[idx - 1].gy][pong[idx - 1].gx].push(pong[idx - 1]);
