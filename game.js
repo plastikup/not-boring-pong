@@ -545,7 +545,7 @@ function game() {
 			let realPlatfX = playerPad.x + playerPad.w / 2;
 			let realPlatfY = playerPad.y + (playerPad.h + playerExtraSize) / 2;
 			if (Math.abs(realPongY - realPlatfY) < (tgpong.s + playerPad.h + playerExtraSize) / 2 && Math.abs(realPongX - realPlatfX) < (tgpong.s + playerPad.w) / 2) {
-				const SIDE_COLLISION_DEEPNESS = playerPad.w / 2 - Math.abs(realPongX / 2 - realPlatfX);
+				const SIDE_COLLISION_DEEPNESS = playerPad.w / 2 - Math.abs(realPongX - realPlatfX);
 				const LEVEL_COLLISION_DEEPNESS = (playerPad.h + playerExtraSize) / 2 - Math.abs(realPongY - realPlatfY);
 				if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
 					tgpong.a = playerPad.velocityRotation * 2 - tgpong.a + Math.PI * 2;
@@ -562,7 +562,7 @@ function game() {
 			realPlatfX = botPad.x + botPad.w / 2;
 			realPlatfY = botPad.y + (botPad.h + botExtraSize) / 2;
 			if (Math.abs(realPongY - realPlatfY) < (tgpong.s + botPad.h + botExtraSize) / 2 && Math.abs(realPongX - realPlatfX) < (tgpong.s + botPad.w) / 2) {
-				const SIDE_COLLISION_DEEPNESS = botPad.w / 2 - Math.abs(realPongX / 2 - realPlatfX);
+				const SIDE_COLLISION_DEEPNESS = botPad.w / 2 - Math.abs(realPongX - realPlatfX);
 				const LEVEL_COLLISION_DEEPNESS = (botPad.h + botExtraSize) / 2 - Math.abs(realPongY - realPlatfY);
 				if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
 					tgpong.a = -tgpong.a + Math.PI * 2;
