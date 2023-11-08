@@ -11,6 +11,9 @@ canvas.height = innerHeight - UIS / 4;
 
 /* --- VARIABLES --- */
 
+let GAME_ENDED = false;
+const previousPB = localStorage.getItem('previousPB') || 0;
+
 let menuSettings = [
 	{ description: 'timer', key: 'min', value: 2, max: 4 },
 	{ description: 'bot difficulty', key: '/5', value: 3, max: 5 },
@@ -207,9 +210,9 @@ function menu() {
 			const x = i * 128 + ox - 64;
 			for (let j = 0; j <= Math.ceil(canvas.height / 128); j++) {
 				const y = j * 128 + oy - 64;
-				const d = Math.sqrt(((lastRegisteredMousePosition[0] - x) ** 2) + ((lastRegisteredMousePosition[1] - y) ** 2));
-				const w = 20 - Math.max(Math.min((d) / 4, 111), 30);
-				const h = 20 - Math.max(Math.min((d) / 4, 111), 30);
+				const d = Math.sqrt((lastRegisteredMousePosition[0] - x) ** 2 + (lastRegisteredMousePosition[1] - y) ** 2);
+				const w = 20 - Math.max(Math.min(d / 4, 111), 30);
+				const h = 20 - Math.max(Math.min(d / 4, 111), 30);
 				if (d == NaN) console.log(d);
 				ctxS.fillRect(x - w / 2, y - h / 2, w, h, colorThemes.tertiary[colorThemes._current] + '2', 2 * Math.sin(Date.now() / 600));
 			}
@@ -299,6 +302,7 @@ function game() {
 	drawPads();
 	pongPhysics();
 	drawBoard();
+	if (GAME_ENDED) endScreen();
 
 	requestAnimationFrame(game);
 
@@ -345,10 +349,11 @@ function game() {
 
 	function drawBoard() {
 		// timer
-		const secondsSince = Math.max(Math.floor((menuSettings[0].value * 60 - (Date.now() - gameStartTS) / 1000) % 60), 0);
-		const minutesSince = Math.max(Math.floor(menuSettings[0].value - (Date.now() - gameStartTS) / 60000), 0);
+		const secondsLeft = Math.max(Math.floor((menuSettings[0].value * 60 - (Date.now() - gameStartTS) / 1000) % 60), 0);
+		const minutesLeft = Math.max(Math.floor(menuSettings[0].value - (Date.now() - gameStartTS) / 60000), 0);
+		GAME_ENDED = minutesLeft + secondsLeft == 0;
 
-		ctxS.fillText(`${minutesSince.toString().padStart(2, '0')}${secondsSince % 2 == 0 ? ':' : ' '}${secondsSince.toString().padStart(2, '0')}`, colorThemes.primary[colorThemes._current], 36, canvas.width - UIS * 1.414 - 5, 5, 'tr');
+		ctxS.fillText(`${minutesLeft.toString().padStart(2, '0')}${secondsLeft % 2 == 0 ? ':' : ' '}${secondsLeft.toString().padStart(2, '0')}`, colorThemes.primary[colorThemes._current], 36, canvas.width - UIS * 1.414 - 5, 5, 'tr');
 
 		// goals
 		ctxS.fillText(`${goals.bot.count} goal${goals.bot.count > 1 ? 's' : ''}`, colorThemes.primary[colorThemes._current], 36 + goals.bot.newGoal._bool * Math.sin(goals.bot.newGoal.i++ * (Math.PI / 18)) * 10, canvas.width / 2 - UIS - 5, 5, 'tr');
@@ -391,20 +396,24 @@ function game() {
 		if (playerPad.superpower.bouncer._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE * 1.5 >= playerPad.superpower.bouncer.startTS) playerPad.superpower.bouncer._bool = false;
 
 		// botPad
-		if (botPad.tgpong == undefined) botPad.tgpong = pong[0];
-		let mostLeft = Infinity;
-		for (let i = 1; i < Math.ceil(collisionMap[0].length / 2); i++) {
-			for (let j = 0; j < collisionMap.length; j++) {
-				const cell = collisionMap[j][i];
-				if (cell.length == 0) continue;
-				for (const targetpong of cell) {
-					if (targetpong.x < mostLeft && targetpong.pongType._type == 'pong') {
-						botPad.tgpong = targetpong;
-						mostLeft = targetpong.x;
+		if (GAME_ENDED) {
+			botPad.tgpong = { y: Math.sin(Date.now() / 1000) * (canvas.height / 2 - UIS * 1.414 * 2) + canvas.height / 2, s: 0 };
+		} else {
+			let mostLeft = Infinity;
+			if (botPad.tgpong == undefined) botPad.tgpong = pong[0];
+			for (let i = 1; i < Math.ceil(collisionMap[0].length / 2); i++) {
+				for (let j = 0; j < collisionMap.length; j++) {
+					const cell = collisionMap[j][i];
+					if (cell.length == 0) continue;
+					for (const targetpong of cell) {
+						if (targetpong.x < mostLeft && targetpong.pongType._type == 'pong') {
+							botPad.tgpong = targetpong;
+							mostLeft = targetpong.x;
+						}
 					}
 				}
+				if (mostLeft != Infinity) break;
 			}
-			if (mostLeft != Infinity) break;
 		}
 		const botExtraSize = botPad.superpower.larger._bool * botPad.superpower.larger.extraSize;
 		if (!botPad.superpower.freeze._bool) {
@@ -443,6 +452,9 @@ function game() {
 			// draw pong
 			if (tgpong.pongType._type == 'pong') ctxS.fillRect(tgpong.x, tgpong.y, tgpong.s, tgpong.s, tgpong.fillStyle);
 			else ctxS.drawImage(tgpong.pongType.src, tgpong.x, tgpong.y, tgpong.s, tgpong.s);
+
+			// exit if game has ended
+			if (GAME_ENDED) continue;
 
 			// move pong
 			tgpong.x = Math.min(Math.max(tgpong.x + Math.cos(tgpong.a) * tgpong.v, -64), Math.ceil(canvas.width / 64) * 65);
@@ -725,6 +737,19 @@ function game() {
 
 	function mapPong(x, y) {
 		return [Math.min(Math.max(x, -64), Math.ceil(canvas.width / 64) * 65), Math.min(Math.max(y, -64), Math.ceil(canvas.height / 64) * 65)];
+	}
+
+	function endScreen() {
+		ctxS.fillRect(0, 0, canvas.width, canvas.height, '#000A');
+		ctxS.fillText('NOT BORING PONG', colorThemes.primary[colorThemes._current], canvas.height / 10 + Math.sin(Date.now() / 500) * 5, canvas.width / 2, canvas.height / 4 - canvas.height / 16, 'c');
+		ctxS.fillText('thanks for playing!', colorThemes.primary[colorThemes._current], canvas.height / 20 + Math.sin(Date.now() / 500) * 5, canvas.width / 2, canvas.height / 4 + canvas.height / 16, 'c');
+
+		ctxS.fillText(`you scored ${goals.player.count}, bot scored ${goals.bot.count}`, colorThemes.tertiary[colorThemes._current], canvas.height / 20, canvas.width / 2, canvas.height / 2 - canvas.height / 30, 'c');
+		const diff = goals.player.count - goals.bot.count;
+		ctxS.fillText(`you are officially a ${diff > 0 ? 'winner' : diff < 0 ? 'looser' : 'tie-lover (sus)'}!`, colorThemes.tertiary[colorThemes._current], canvas.height / 20, canvas.width / 2, canvas.height / 2 + canvas.height / 30, 'c');
+
+		ctxS.fillText(`previous PB: ${previousPB}`, colorThemes.primary[colorThemes._current], canvas.height / 20 + Math.sin(Date.now() / 500) * 2, canvas.width / 2, canvas.height - (canvas.height / 4 + canvas.height / 16), 'c');
+		if (goals.player.count > previousPB) localStorage.setItem('previousPB', goals.player.count);
 	}
 }
 
