@@ -9,6 +9,20 @@ const ctx = canvas.getContext('2d');
 canvas.width = innerWidth;
 canvas.height = innerHeight - UIS / 4;
 
+/* --- OH!DIO --- */
+
+const mouseClick = new Audio('./sfx/mouseClick.mp3');
+const paddle = new Audio('./sfx/paddle.mp3');
+const collide = new Audio('./sfx/collide.mp3');
+const score = new Audio('./sfx/score.mp3');
+paddle.volume = 0.5;
+score.volume = 0.2;
+
+function playAudio(audioRef) {
+	audioRef.currentTime = 0;
+	audioRef.play();
+}
+
 /* --- VARIABLES --- */
 
 let GAME_ENDED = false;
@@ -193,10 +207,12 @@ let unreadTouchEvents = [];
 document.addEventListener('touchstart', (e) => {
 	// mobile client
 	unreadTouchEvents.push({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+	playAudio(mouseClick);
 });
 document.addEventListener('mousedown', (e) => {
 	// computer client
 	unreadTouchEvents.push({ x: e.offsetX, y: e.offsetY });
+	playAudio(mouseClick);
 });
 
 let lastRegisteredMousePosition = [canvas.width / 2, canvas.height / 2];
@@ -213,7 +229,6 @@ function menu() {
 				const d = Math.sqrt((lastRegisteredMousePosition[0] - x) ** 2 + (lastRegisteredMousePosition[1] - y) ** 2);
 				const w = 20 - Math.max(Math.min(d / 4, 111), 30);
 				const h = 20 - Math.max(Math.min(d / 4, 111), 30);
-				if (d == NaN) console.log(d);
 				ctxS.fillRect(x - w / 2, y - h / 2, w, h, colorThemes.tertiary[colorThemes._current] + '2', 2 * Math.sin(Date.now() / 600));
 			}
 		}
@@ -246,7 +261,6 @@ function menu() {
 			}
 		}
 
-		console.log(coord.x, coord.y);
 		unreadTouchEvents.splice(i, 1);
 	}
 	for (let i = 0; i < 4; i++) {
@@ -289,7 +303,6 @@ function onMove(xTouch, yTouch, save) {
 		const playerExtraSize = playerPad.superpower.larger._bool * playerPad.superpower.larger.extraSize;
 		playerPad.tgy = yTouch - (playerPad.h + playerExtraSize) / 2;
 	}
-	//console.log(Math.atan2(canvas.height / 2 - yTouch, canvas.width / 2 - xTouch) / (Math.PI/180))
 }
 
 function game() {
@@ -582,6 +595,7 @@ function game() {
 					if (realPongX < realPlatfX) tgpong.x = playerPad.x - tgpong.s;
 					else tgpong.x = playerPad.x + playerPad.w;
 				}
+				playAudio(paddle);
 			}
 			const botExtraSize = botPad.superpower.larger._bool * botPad.superpower.larger.extraSize;
 			realPlatfX = botPad.x + botPad.w / 2;
@@ -599,6 +613,7 @@ function game() {
 					if (realPongX < realPlatfX) tgpong.x = botPad.x - tgpong.s;
 					else tgpong.x = botPad.x + botPad.w;
 				}
+				playAudio(paddle);
 			}
 
 			// if outsite reset pong
@@ -651,7 +666,6 @@ function game() {
 							newSuperpowerAnnouncement.bot.i = 0;
 						}
 					}
-					console.log(tgpong.pongType._type);
 					try {
 						// why dafuk this refuses to work until i force it with a while loop
 						while (collisionMap[tgpong.gy][tgpong.gx].indexOf(tgpong) != -1) {
@@ -684,6 +698,8 @@ function game() {
 				tgpong.a = Math.random() * Math.PI * 2;
 				tgpong.v = MIN_PONG_SPEED;
 				tgpong.motionless = { _bool: true, extraSize: 40, opacity: 0 };
+
+				playAudio(score);
 			}
 		}
 	}
@@ -705,7 +721,6 @@ function game() {
 
 										const SIDE_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s));
 										const LEVEL_COLLISION_DEEPNESS = (otherPong.s + tgpong.s) / 2 - Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s));
-										console.log(tgpong.pongID);
 
 										if (SIDE_COLLISION_DEEPNESS > LEVEL_COLLISION_DEEPNESS) {
 											const a1 = ((MY_OLD_A % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
@@ -741,6 +756,7 @@ function game() {
 										//tgpong.fillStyle = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padEnd(6, '0');
 
 										cannotCollideWith.push(otherPong.pongID);
+										playAudio(collide);
 									}
 								}
 							}
@@ -812,7 +828,8 @@ const F = new FontFace('DotGothic16', 'url(./DotGothic16/DotGothic16-Regular.ttf
 F.load().then((font) => {
 	document.fonts.add(font);
 	ctxS.clearRect();
-	console.log('font ready');
+
+	console.info('font ready');
 
 	for (let i = 0; i < Math.ceil(canvas.height / 64) + 2; i++) {
 		collisionMap.push([]);
