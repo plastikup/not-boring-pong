@@ -484,7 +484,7 @@ function game() {
 			collisionMap[tgpong.gy][tgpong.gx].push(tgpong);
 
 			// execute collisions
-			tgpong = executeCollisions(tgpong);
+			tgpong = executeCollisions(tgpong, undefined, GAME_ENDED);
 
 			// exit if game has ended
 			if (GAME_ENDED) {
@@ -704,7 +704,7 @@ function game() {
 		}
 	}
 
-	function executeCollisions(tgpong, cannotCollideWith = []) {
+	function executeCollisions(tgpong, cannotCollideWith = [], collideWithMultipleTypes = false) {
 		for (let i = -1; i <= 1; i++) {
 			const arrLine = collisionMap[tgpong.gy + i];
 			if (arrLine != undefined) {
@@ -713,7 +713,7 @@ function game() {
 					if (collisionCell != undefined) {
 						collisionCell.forEach((otherPong) => {
 							if (otherPong != tgpong && !otherPong.motionless._bool && otherPong.pongID > tgpong.pongID && !tgpong.cannotCollideWith.includes(otherPong.pongID)) {
-								if (!((tgpong.pongType._type != 'pong' && otherPong.pongType._type == 'pong') || (tgpong.pongType._type == 'pong' && otherPong.pongType._type != 'pong'))) {
+								if (!((tgpong.pongType._type != 'pong' && otherPong.pongType._type == 'pong') || (tgpong.pongType._type == 'pong' && otherPong.pongType._type != 'pong')) || collideWithMultipleTypes) {
 									if (Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s)) < (otherPong.s + tgpong.s) / 2 && Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s)) < (otherPong.s + tgpong.s) / 2) {
 										const MY_OLD_A = tgpong.a;
 										const MY_OLD_X = tgpong.x;
