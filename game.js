@@ -310,7 +310,7 @@ function game() {
 	ctxS.fillRect(0, 0, canvas.width, canvas.height, colorThemes.secondary[colorThemes._current] + '8');
 
 	if (MIN_PONG_SPEED < 9) MIN_PONG_SPEED += 0.0015;
-	if (Math.floor((Date.now() - gameStartTS) / 10000) - (pong.length - specialsCount) > 0 && pong.length - specialsCount < MAX_PONG_COUNT) addPong(1);
+	if (Math.floor((Date.now() - gameStartTS) / 10000) + 1 - (pong.length - specialsCount) > 0 && pong.length - specialsCount < MAX_PONG_COUNT) addPong(1);
 
 	superpowerPopup();
 	drawPads();
