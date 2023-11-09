@@ -287,6 +287,7 @@ function menu() {
 	else {
 		gameStartTS = Date.now() + 999;
 		MAX_PONG_COUNT = menuSettings[2].value;
+		document.body.style.cursor = 'crosshair';
 		addPong(1);
 		game();
 	}
@@ -366,7 +367,10 @@ function game() {
 		// timer
 		const secondsLeft = Math.max(Math.floor((menuSettings[0].value * 60 - (Date.now() - gameStartTS) / 1000) % 60), 0);
 		const minutesLeft = Math.max(Math.floor(menuSettings[0].value - (Date.now() - gameStartTS) / 60000), 0);
-		GAME_ENDED = minutesLeft + secondsLeft == 0;
+		if (minutesLeft + secondsLeft == 0 && !GAME_ENDED) {
+			GAME_ENDED = true;
+			document.body.style.cursor = 'default';
+		}
 
 		ctxS.fillText(`${minutesLeft.toString().padStart(2, '0')}${secondsLeft % 2 == 0 ? ':' : ' '}${secondsLeft.toString().padStart(2, '0')}`, colorThemes.primary[colorThemes._current], 36, canvas.width - UIS * 1.414 - 5, 5, 'tr');
 
@@ -403,7 +407,10 @@ function game() {
 		playerPad.velocityRotation = Math.min(Math.max(playerPad.velocityRotation / 1.75 + playerPad.velocityY / 100, -Math.PI / 16), Math.PI / 16);
 		playerPad.velocityY = 0;
 		ctxS.fillRect(playerPad.x, playerPad.y, playerPad.w, playerPad.h + playerExtraSize, colorThemes.primary[colorThemes._current], playerPad.velocityRotation);
-		if (playerPad.superpower.freeze._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= playerPad.superpower.freeze.startTS) playerPad.superpower.freeze._bool = false;
+		if (playerPad.superpower.freeze._bool && Date.now() - SUPERPOWER_TS_EFFECTIVE >= playerPad.superpower.freeze.startTS) {
+			playerPad.superpower.freeze._bool = false;
+			document.body.style.cursor = 'crosshair';
+		}
 		if (playerPad.superpower.larger._bool) {
 			playerPad.superpower.larger.extraSize -= 0.1;
 			if (playerPad.superpower.larger.extraSize <= 0) playerPad.superpower.larger._bool = false;
@@ -449,7 +456,7 @@ function game() {
 		for (let i = 0; i < pong.length; i++) {
 			let tgpong = pong[i];
 
-			// exit if pong does not move
+			// exit if pong does not move (for pong intro animation when it teleports to the center)
 			if (tgpong.motionless._bool) {
 				const exs = tgpong.motionless.extraSize;
 				if (tgpong.pongType._type == 'pong') ctxS.fillRect(tgpong.x - exs / 2, tgpong.y - exs / 2, tgpong.s + exs, tgpong.s + exs, tgpong.fillStyle + Math.floor(tgpong.motionless.opacity * 16).toString(16));
@@ -651,6 +658,8 @@ function game() {
 							newSuperpowerAnnouncement.player._bool = true;
 							newSuperpowerAnnouncement.player.type = 'freeze';
 							newSuperpowerAnnouncement.player.i = 0;
+
+							document.body.style.cursor = 'not-allowed';
 						} else if (tgpong.pongType._type == 'larger') {
 							botPad.superpower.larger._bool = true;
 							botPad.superpower.larger.extraSize = canvas.height / 8;
