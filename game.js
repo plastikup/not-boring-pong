@@ -1,6 +1,6 @@
 'use strict';
 console.clear();
-const UIS = 72;
+const UIS = 80;
 
 /* --- canvas initialisation --- */
 
@@ -30,8 +30,8 @@ const previousPB = localStorage.getItem('previousPB') || 0;
 
 let menuSettings = [
 	{ description: 'timer', key: 'min', value: 2, max: 4 },
-	{ description: 'bot difficulty', key: '/5', value: 3, max: 5 },
-	{ description: 'active balls (sus)', key: '', value: 4, max: 10 },
+	{ description: 'bot difficulty', key: '/5', value: 2, max: 5 },
+	{ description: 'active balls (sus)', key: '', value: 5, max: 10 },
 	{ description: 'color theme', key: '', value: Math.round(localStorage.getItem('colorTheme') || 1), max: 3 },
 ];
 canvas.className = menuSettings[3].value == 1 ? 'a' : menuSettings[3].value == 2 ? 'b' : 'c';
@@ -310,7 +310,7 @@ function game() {
 	ctxS.fillRect(0, 0, canvas.width, canvas.height, colorThemes.secondary[colorThemes._current] + '8');
 
 	if (MIN_PONG_SPEED < 9) MIN_PONG_SPEED += 0.0015;
-	if (Math.floor((Date.now() - gameStartTS) / 10000) + 1 - (pong.length - specialsCount) > 0 && pong.length - specialsCount < MAX_PONG_COUNT) addPong(1);
+	if (Math.floor((Date.now() - gameStartTS) / 15000) + 1 - (pong.length - specialsCount) > 0 && pong.length - specialsCount < MAX_PONG_COUNT) addPong(1);
 
 	superpowerPopup();
 	drawPads();
