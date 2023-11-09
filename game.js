@@ -321,6 +321,7 @@ function game() {
 	requestAnimationFrame(game);
 
 	function superpowerPopup() {
+		// the popup that comes when a superpower is applies (happens when a superpower goes into YOUR goal)
 		if (newSuperpowerAnnouncement.bot._bool) {
 			const shorthand = newSuperpowerAnnouncement.bot;
 
@@ -715,6 +716,7 @@ function game() {
 							if (otherPong != tgpong && !otherPong.motionless._bool && otherPong.pongID > tgpong.pongID && !tgpong.cannotCollideWith.includes(otherPong.pongID)) {
 								if (!((tgpong.pongType._type != 'pong' && otherPong.pongType._type == 'pong') || (tgpong.pongType._type == 'pong' && otherPong.pongType._type != 'pong')) || collideWithMultipleTypes) {
 									if (Math.abs(otherPong.x + otherPong.s - (tgpong.x + tgpong.s)) < (otherPong.s + tgpong.s) / 2 && Math.abs(otherPong.y + otherPong.s - (tgpong.y + tgpong.s)) < (otherPong.s + tgpong.s) / 2) {
+										// messy code oops :(
 										const MY_OLD_A = tgpong.a;
 										const MY_OLD_X = tgpong.x;
 										const MY_OLD_Y = tgpong.y;
@@ -770,10 +772,13 @@ function game() {
 	}
 
 	function mapPong(x, y) {
+		// maps the pong position inside the acceptable canvas size
 		return [Math.min(Math.max(x, -64), Math.ceil(canvas.width / 64) * 65), Math.min(Math.max(y, -64), Math.ceil(canvas.height / 64) * 65)];
 	}
 
 	function endScreen() {
+		// display endscreen
+		// does not include code for pong shuffle in the background; thats inside pongPhysics()
 		ctxS.fillRect(0, 0, canvas.width, canvas.height, '#000A');
 		ctxS.fillText('NOT BORING PONG', colorThemes.primary[colorThemes._current], canvas.height / 10 + Math.sin(Date.now() / 500) * 5, canvas.width / 2, canvas.height / 4 - canvas.height / 16, 'c');
 		ctxS.fillText('thanks for playing!', colorThemes.primary[colorThemes._current], canvas.height / 20 + Math.sin(Date.now() / 500) * 5, canvas.width / 2, canvas.height / 4 + canvas.height / 16, 'c');
@@ -791,8 +796,8 @@ function addPong(times = 1, pongType = { _type: 'pong' }) {
 	for (let i = 0; i < times; i++) {
 		const randomAngle = 2 * Math.PI * Math.random();
 		let idx = pong.push({
-			x: canvas.width / 2 - 16, // + Math.cos(randomAngle) * 100,
-			y: canvas.height / 2 - 16, // + Math.sin(randomAngle) * 100,
+			x: canvas.width / 2 - 16,
+			y: canvas.height / 2 - 16,
 			gx: Math.floor(canvas.width / 2 / 64) + 1,
 			gy: Math.floor(canvas.height / 2 / 64) + 1,
 			ogx: Math.floor(canvas.width / 2 / 64) + 1,
@@ -838,6 +843,5 @@ F.load().then((font) => {
 		}
 	}
 
-	//game();
 	menu();
 });
